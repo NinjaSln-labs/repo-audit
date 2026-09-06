@@ -51,4 +51,5 @@
 - **复测二（复发）**：2026-09-06 下午 push 报 `GnuTLS recv error (-110): The TLS connection was non-properly terminated`，重试一次直接 120s 超时挂起
 - **结论修正**：**间歇性坑，非自愈**——上午成功是侥幸窗口，下午复发推翻自愈判定
 - **规避**：远端已切 `git@github.com:NinjaSln-labs/repo-audit.git`（SSH），push 立即恢复秒级
+- **根治（2026-09-06 用户裁定）**：push 一律 SSH 不用 HTTPS；另配全局重写 `git config --global url."git@github.com:".insteadOf "https://github.com/"`——即使远端被工具改回 HTTPS URL，实际传输仍走 SSH（已实测 HTTPS URL ls-remote/push 均秒级）
 - **副作用残留**：HTTPS URL 时期 push 时 `git: 'credential-gh' is not a git command` 警告——远端 URL 内嵌凭证与 credential helper 配置不匹配所致，推送实际成功，无害噪音；切 SSH 后此噪音消失
