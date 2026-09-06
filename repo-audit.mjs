@@ -639,10 +639,51 @@ function loadRules(type, customPaths = [], repoPath = null) {
     })
   }
 
+  // 参数类型校验：YAML 解析后参数类型可能与代码假设不匹配，
+  // 在加载阶段提前发现并警告，而非运行时 catch 吞掉
+  const PARAM_SCHEMA = {
+    file_exists:    { paths: ['array', 'string'] },
+    file_contains:  { path: ['string'], patterns: ['array', 'string'] },
+    file_header:    { path: ['string'], pattern: ['string'] },
+    regex:          { path: ['string'], pattern: ['string'] },
+    grep:           { pattern: ['string'] },
+    json_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'] },
+    toml_field:     { path: ['string'], field: ['string'] },
+    yaml_field:     { path: ['string'], field: ['string'] },
+    directory_exists: { paths: ['array', 'string'] },
+    not_exists:     { paths: ['array', 'string'] },
+    glob_count:     { pattern: ['string'] },
+    command_result: { command: ['string'] },
+  }
+  const checkType = (val, types) =>
+    types.some(t => t === 'array' ? Array.isArray(val) : typeof val === t)
+  for (const rule of allRules) {
+    const schema = PARAM_SCHEMA[rule.check]
+    if (!schema) continue
+    const params = rule.params || {}
+    for (const [key, expectedTypes] of Object.entries(schema)) {
+      if (params[key] === undefined) continue
+      if (!checkType(params[key], expectedTypes)) {
+        console.error(`⚠ 规则 ${rule.id} (${rule.check})：参数 ${key} 类型不匹配，` +
+          `期望 ${expectedTypes.join(' | ')}，实际 ${Array.isArray(params[key]) ? 'array' : typeof params[key]} — 该规则将被跳过`)
+        rule._invalid = true
+        break
+      }
+      // fallback_field 语义校验：字符串含逗号时应为数组格式
+      if (rule.check === 'json_field' && key === 'fallback_field' &&
+          typeof params[key] === 'string' && params[key].includes(',')) {
+        console.error(`⚠ 规则 ${rule.id}：fallback_field 为逗号分隔字符串，应为 YAML 数组格式 [${JSON.stringify(params[key].split(','))}]`)
+        rule._invalid = true
+        break
+      }
+    }
+  }
+
   // 去重：同 id 只保留第一条
   const seenIds = new Set()
   const deduped = []
   for (const r of allRules) {
+    if (r._invalid) continue
     if (!seenIds.has(r.id)) { seenIds.add(r.id); deduped.push(r) }
   }
   return deduped
@@ -890,7 +931,7 @@ function runCheck(rule, repoPath, mpj = null) {
             }
           }
         }
-      } catch { passed = false; evidence = 'JSON 解析失败' }
+      } catch (e) { passed = false; evidence = `JSON 解析失败: ${e.message}` }
       break
     }
 

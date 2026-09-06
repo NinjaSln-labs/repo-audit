@@ -709,4 +709,41 @@ neonforge/（ Electron monorepo，405 commits）
 不递归 workspace。monorepo 中若子目录有 license 字段而根目录没有，可能误报。
 workaround：对工程子目录单独跑审计，或人工确认。
 
+### 12.7 开源仓 workflow 审查清单
+
+首次将 scaffold 生成的仓库发布到 GitHub 前，逐项检查 CI/publish workflow 是否适配目标项目：
+
+| # | 检查点 | 常见问题 | 验证方式 |
+|---|---|---|---|
+| 1 | **分支名** | workflow 触发 `main`，实际分支为 `master` | `git branch --show-current` vs `on.push.branches` |
+| 2 | **依赖管理** | `npm ci` 但无 `package-lock.json`（零依赖项目） | `ls package-lock.json` 存在性 |
+| 3 | **脚本路径** | `node scripts/verify.mjs` 但实际为 `verify.mjs` | `ls scripts/verify.mjs` 存在性 |
+| 4 | **tag 格式** | `demo-v*` 但实际为 `v*`（匹配 package.json version） | 检查 `on.push.tags` 与 `package.json.version` 格式一致 |
+| 5 | **action 版本** | `<commit-SHA>` 占位符未替换 | `grep -r '<commit-SHA>' .github/workflows/` 应为空 |
+| 6 | **npm trusted publisher** | publish.yml 配置了 OIDC 但 npm 端未配置 trusted publisher | npmjs.com → Package Settings → Trusted Publishers |
+
+**快速检查命令**：
+```bash
+# 1) 检查分支名一致性
+echo "实际分支: $(git branch --show-current)"
+echo "workflow 触发: $(grep -A2 'branches:' .github/workflows/ci.yml | tail -1 | xargs)"
+
+# 2) 检查依赖管理
+[ -f package-lock.json ] && echo "✓ 有 lockfile" || echo "✗ 无 lockfile — 移除 npm ci"
+
+# 3) 检查脚本路径
+for f in scripts/verify.mjs verify.mjs; do [ -f "$f" ] && echo "✓ $f"; done
+
+# 4) 检查 tag 格式
+echo "package.json version: $(node -p "require('./package.json').version")"
+echo "workflow tag: $(grep 'tags:' -A2 .github/workflows/publish.yml | tail -1)"
+
+# 5) 检查占位符
+grep -rE '<commit-SHA>|dsh-demo|demo-v' .github/workflows/ && echo "✗ 有残留" || echo "✓ 无残留"
+```
+
+**教训来源**：`repo-audit` 开源仓首次 push 时，CI workflow 从 dsh-demo 模板直接复制，
+`npm ci`（无 lockfile）、`scripts/verify.mjs`（路径错误）、`main` 分支（实际 master）、
+`<commit-SHA>`（占位符未替换）四项同时失败，workflow 不触发。
+
 

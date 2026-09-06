@@ -292,6 +292,35 @@ function generateInto(stageDir, type, { overlay, params }) {
     const dst = join(stageDir, rel);
     if (existsSync(dst)) chmodSync(dst, 0o755);
   }
+
+  // 占位符残留扫描：模板特定占位符（非用户可填）未被替换时警告
+  const TEMPLATE_PLACEHOLDERS = [
+    /<commit-SHA>/g,
+    /dsh-demo/g,
+    /demo-v\*/g,
+    /<一句话描述>/g,
+    /<一句话主旨>/g,
+    /<版本>/g,
+  ]
+  const scanDir = (dir) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isSymbolicLink()) continue
+      const full = join(dir, e.name)
+      if (e.isDirectory()) { scanDir(full); continue }
+      if (!/\.(md|yml|yaml|json|sh|cmd|ps1|toml)$/.test(e.name)) continue
+      let text
+      try { text = readFileSync(full, 'utf8') } catch { continue }
+      const clean = text.replace(/<!--[\s\S]*?-->/g, '')
+      for (const pat of TEMPLATE_PLACEHOLDERS) {
+        pat.lastIndex = 0
+        if (pat.test(clean)) {
+          const rel = relative(stageDir, full)
+          console.error(`⚠ 模板占位符残留：${rel} 含 ${pat.source} — 请手动替换或适配为 ${type} 分类`)
+        }
+      }
+    }
+  }
+  scanDir(stageDir)
 }
 
 /** 生成模式的 TODO 清单 */
