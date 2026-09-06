@@ -471,4 +471,57 @@ node repo-audit.mjs --repo <path> --format json \
 
 ---
 
-*Agent 操作手册 v1.2 · 2026-09-06（新增 monorepo 感知 P6 + .auditrc.yaml 豁免）
+## 十、反馈通道
+
+### 10.1 Agent 检测协议
+
+Agent 可通过 GitHub Issues API 检测用户反馈：
+
+```bash
+# 列出未处理的反馈（label: audit-feedback + state: open）
+gh issue list --repo NinjaSln-labs/repo-audit --label audit-feedback --state open --json number,title,createdAt,body
+
+# 获取单条反馈详情
+gh issue view <NUMBER> --repo NinjaSln-labs/repo-audit --json title,body,labels,createdAt
+
+# 反馈已处理，关闭 Issue
+gh issue close <NUMBER> --repo NinjaSln-labs/repo-audit --comment "已处理：[处理说明]"
+```
+
+**标签语义**：
+- `audit-feedback` — 所有工具反馈（Agent 过滤条件）
+- `feedback` — 通用反馈（与 audit-feedback 同时存在）
+- `bug` — Bug 报告
+- `enhancement` — 功能建议
+- `documentation` — 文档问题
+
+### 10.2 Agent 创建反馈
+
+Agent 可通过 CLI 或 API 创建反馈 Issue：
+
+```bash
+# CLI 方式（自动预填环境信息）
+node repo-audit.mjs --feedback "在 xxx 场景下出现 yyy 问题"
+
+# API 方式（更灵活）
+gh issue create --repo NinjaSln-labs/repo-audit \
+  --title "Feedback: <简要标题>" \
+  --body "<Markdown 正文>" \
+  --label "feedback,audit-feedback"
+```
+
+### 10.3 反馈处理流程
+
+```
+用户反馈 → audit-feedback label → Agent 检测 → 分类处理 → 关闭 Issue
+    ↓                                    ↓
+GitHub Issues                    修复 / 文档 / 不采纳
+```
+
+**处理优先级**：
+1. `critical` — 工具崩溃/数据损坏（24h 内响应）
+2. `major` — 功能严重受损（72h 内响应）
+3. `minor` — 功能部分受损（1 周内响应）
+4. `info` — 建议改进（排期处理）
+
+*Agent 操作手册 v1.3 · 2026-09-06（新增反馈通道 §10）

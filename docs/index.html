@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>repo-audit 文档</title>
+  <style>
+    :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent-hover: #79c0ff; --green: #3fb950; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 960px; margin: 0 auto; padding: 2rem 1rem; }
+    header { text-align: center; padding: 3rem 0 2rem; }
+    h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+    h1 a { color: var(--text); text-decoration: none; }
+    .subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 1.5rem; }
+    .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.25rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .badge-npm { background: #f70a45; color: white; }
+    .badge-ci { background: var(--accent); color: white; }
+    .badge-node { background: #339933; color: white; }
+    .badge-license { background: #555; color: white; }
+    .badge-zero { background: var(--green); color: white; }
+    .badge-count { background: var(--muted); color: white; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; transition: border-color 0.2s; }
+    .card:hover { border-color: var(--accent); }
+    .card h2 { font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--accent); }
+    .card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+    .card a { display: inline-block; color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.9rem; }
+    .card a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+    .quickstart { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
+    .quickstart h2 { font-size: 1.3rem; margin-bottom: 1rem; color: var(--accent); }
+    pre { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; overflow-x: auto; font-size: 0.9rem; }
+    code { font-family: 'SF Mono', Monaco, Inconsolata, monospace; }
+    code:not(pre code) { background: #21262d; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.85em; }
+
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 2rem 0; }
+    .stat { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; text-align: center; }
+    .stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
+
+    .feedback { background: #1a1a2e; border: 1px solid #4c4c8a; border-radius: 8px; padding: 1.5rem; margin: 2rem 0; }
+    .feedback h2 { color: #a78bfa; }
+    .feedback p { color: var(--muted); }
+
+    footer { text-align: center; padding: 2rem 0; color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 2rem; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .nav-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .nav-links { display: flex; gap: 1rem; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.9rem; }
+    .nav-links a:hover { color: var(--accent); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="nav-bar">
+    <a href="https://github.com/NinjaSln-labs/repo-audit" style="font-weight:700;color:var(--text);text-decoration:none;">repo-audit</a>
+    <div class="nav-links">
+      <a href="repo-audit/HUMAN-GUIDE.md">使用手册</a>
+      <a href="repo-audit/AGENT-GUIDE.md">Agent 手册</a>
+      <a href="../AUDIT.md">审计方法论</a>
+      <a href="../BEST-PRACTICES.md">最佳实践</a>
+      <a href="../REPO-CLASSIFICATION.md">分类检测</a>
+      <a href="../PUBLISHING.md">发布流程</a>
+    </div>
+  </div>
+
+  <header>
+    <h1><a href="https://github.com/NinjaSln-labs/repo-audit">repo-audit</a></h1>
+    <p class="subtitle">仓库标准化审计工具 + 工程脚手架生成器（零依赖）</p>
+    <div class="badges">
+      <span class="badge badge-npm">npm repo-audit-tool</span>
+      <span class="badge badge-ci">CI 全绿</span>
+      <span class="badge badge-node">Node ≥18</span>
+      <span class="badge badge-zero">零依赖</span>
+      <span class="badge badge-license">MIT</span>
+      <span class="badge badge-count">19 条规则 · 18 种分类</span>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-value">100/A</div><div class="stat-label">自审计评分</div></div>
+    <div class="stat"><div class="stat-value">18</div><div class="stat-label">仓库分类</div></div>
+    <div class="stat"><div class="stat-value">15+</div><div class="stat-label">LLM 提供商</div></div>
+    <div class="stat"><div class="stat-value">0</div><div class="stat-label">npm 依赖</div></div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h2>📖 人类使用手册</h2>
+      <p>安装、快速开始、参数说明、环境变量、审计维度、故障排查、与 scaffold 配合</p>
+      <a href="repo-audit/HUMAN-GUIDE.md">→ HUMAN-GUIDE.md</a>
+    </div>
+    <div class="card">
+      <h2>🤖 Agent 操作手册</h2>
+      <p>调用协议、输出解析、标准操作流程、错误处理、决策树、授权路径</p>
+      <a href="repo-audit/AGENT-GUIDE.md">→ AGENT-GUIDE.md</a>
+    </div>
+    <div class="card">
+      <h2>🔍 审计方法论</h2>
+      <p>评分体系、规则设计、维度划分、分类检测逻辑</p>
+      <a href="../AUDIT.md">→ AUDIT.md</a>
+    </div>
+    <div class="card">
+      <h2>📏 最佳实践</h2>
+      <p>工程仓库应满足的标准化检查项，按维度分类</p>
+      <a href="../BEST-PRACTICES.md">→ BEST-PRACTICES.md</a>
+    </div>
+    <div class="card">
+      <h2>🏷️ 分类检测</h2>
+      <p>18 种仓库类型识别逻辑，置信度评分，自动检测规则</p>
+      <a href="../REPO-CLASSIFICATION.md">→ REPO-CLASSIFICATION.md</a>
+    </div>
+    <div class="card">
+      <h2>🚀 脚手架生成</h2>
+      <p>从零生成符合规范的工程脚手架，支持 6 种分类</p>
+      <a href="../templates/README.md">→ templates/README.md</a>
+    </div>
+  </div>
+
+  <div class="quickstart">
+    <h2>⚡ 快速开始</h2>
+    <pre><code># 全局安装
+npm install -g repo-audit-tool
+
+# 审计仓库
+repo-audit --repo /path/to/repo
+
+# JSON 输出
+repo-audit --repo /path/to/repo --format json
+
+# 生成脚手架
+node templates/scaffold.mjs --type dsh-plugin --name my-plugin</code></pre>
+  </div>
+
+  <div class="feedback">
+    <h2>💬 反馈通道</h2>
+    <p>工具内置 <code>--feedback</code> 命令，一键创建 GitHub Issue（自动预填上下文）。也可通过以下方式反馈：</p>
+    <pre><code># 工具内反馈（自动预填审计结果）
+repo-audit --feedback "问题描述"
+
+# GitHub Issues
+https://github.com/NinjaSln-labs/repo-audit/issues
+
+# Bug 报告（预填模板）
+https://github.com/NinjaSln-labs/repo-audit/issues/new?template=bug_report.yml</code></pre>
+  </div>
+
+  <footer>
+    <p>Made with ❤️ by <a href="https://github.com/NinjaSln-labs">NinjaSln-labs</a> · MIT License · 2026</p>
+    <p><a href="https://github.com/NinjaSln-labs/repo-audit">GitHub</a> · <a href="https://www.npmjs.com/package/repo-audit-tool">npm</a></p>
+  </footer>
+
+</div>
+</body>
+</html>

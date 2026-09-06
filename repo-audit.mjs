@@ -37,11 +37,11 @@ const DEFAULT_OUTPUT_DIR = 'audit-report'
 const KNOWN_FLAGS = new Set([
   '--repo', '--type', '--format', '--output',
   '--llm-provider', '--llm-model', '--llm-base-url', '--strict',
-  '--rules', '--dim', '--help', '-h'
+  '--rules', '--dim', '--help', '-h', '--feedback'
 ])
 const VALUE_FLAGS = new Set([
   '--repo', '--type', '--format', '--output',
-  '--llm-provider', '--llm-model', '--llm-base-url', '--rules', '--dim'
+  '--llm-provider', '--llm-model', '--llm-base-url', '--rules', '--dim', '--feedback'
 ])
 
 function parseArgs(argv) {
@@ -106,6 +106,7 @@ function usage() {
   --strict            严格模式：Critical/Major 发现即 exit 1
   --rules <file>      自定义规则文件（可多次）
   --dim <domain>      只审计指定维度（可多次，如 --dim security --dim docs）
+  --feedback <msg>    提交反馈（创建 GitHub Issue，自动预填环境信息）
   --help, -h          显示此帮助
 
 环境变量：
@@ -1403,6 +1404,43 @@ async function main() {
 
   if (args.flags['--help'] || args.flags['-h']) {
     console.log(usage())
+    process.exit(0)
+  }
+
+  // Feedback 通道：创建 GitHub Issue（Agent 可检测）
+  if (args.flags['--feedback']) {
+    const message = args.flags['--feedback'] || '（未提供反馈内容）'
+    const label = 'feedback'
+    const body = `## 反馈内容
+
+${message}
+
+---
+
+## 环境信息
+
+- **工具版本**: ${readFileSync('package.json', 'utf-8').match(/"version":\s*"([^"]+)"/)?.[1] || 'unknown'}
+- **Node.js**: ${process.version}
+- **平台**: ${process.platform} ${process.arch}
+- **时间**: ${new Date().toISOString()}
+
+## 标签
+
+- ${label}
+- audit-feedback
+`
+    // 尝试通过 gh CLI 创建 Issue
+    const { execSync } = await import('node:child_process')
+    try {
+      const result = execSync(
+        `gh issue create --repo NinjaSln-labs/repo-audit --title "Feedback: ${message.slice(0, 60)}" --body "${body.replace(/"/g, '\\"').replace(/\n/g, '\\n')}" --label "${label},audit-feedback"`,
+        { encoding: 'utf-8', timeout: 30000 }
+      )
+      console.error(`✓ 反馈已提交: ${result.trim()}`)
+    } catch (e) {
+      console.error(`✗ gh CLI 不可用，请手动提交反馈：`)
+      console.error(`  https://github.com/NinjaSln-labs/repo-audit/issues/new?labels=${label},audit-feedback&body=${encodeURIComponent(body)}`)
+    }
     process.exit(0)
   }
 

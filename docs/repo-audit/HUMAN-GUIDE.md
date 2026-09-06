@@ -746,4 +746,34 @@ grep -rE '<commit-SHA>|dsh-demo|demo-v' .github/workflows/ && echo "✗ 有残�
 `npm ci`（无 lockfile）、`scripts/verify.mjs`（路径错误）、`main` 分支（实际 master）、
 `<commit-SHA>`（占位符未替换）四项同时失败，workflow 不触发。
 
+### 12.8 反馈通道
+
+**工具内反馈**（推荐，自动预填环境信息）：
+```bash
+repo-audit --feedback "在 monorepo 项目中 DOC-003b 规则误报"
+```
+效果：自动创建 GitHub Issue，包含反馈内容 + 工具版本 + Node.js 版本 + 平台信息。
+Agent 可通过 `gh issue list --repo NinjaSln-labs/repo-audit --label audit-feedback` 检测反馈。
+
+**GitHub Issues**：
+- [Bug 报告](https://github.com/NinjaSln-labs/repo-audit/issues/new?template=bug_report.yml) — 预填复现步骤/实际输出/期望输出
+- [功能反馈](https://github.com/NinjaSln-labs/repo-audit/issues/new?template=feedback.yml) — 建议/文档问题/性能问题
+- [全部 Issues](https://github.com/NinjaSln-labs/repo-audit/issues)
+
+**其他渠道**：
+- Discord/Slack：见 GitHub Discussions
+- 邮件：info@ninjasln-labs.com（仅安全问题）
+
+**Agent 反馈检测协议**：
+```bash
+# 检测新反馈
+gh issue list --repo NinjaSln-labs/repo-audit --label audit-feedback --state open --json number,title,createdAt
+
+# 获取反馈详情
+gh issue view <NUMBER> --repo NinjaSln-labs/repo-audit
+
+# 反馈已处理
+gh issue close <NUMBER> --repo NinjaSln-labs/repo-audit --comment "已处理，感谢反馈"
+```
+
 

@@ -1,0 +1,60 @@
+name: Feedback
+description: 工具使用反馈、建议或问题
+labels: ["feedback", "audit-feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢你提交反馈！请尽量提供以下信息，帮助我们改进工具。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 反馈内容
+      description: 请描述你遇到的问题、建议或想法
+      placeholder: 例如：在 monorepo 项目中，DOC-003b 规则误报了...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 环境信息（可选）
+      description: 工具版本、Node.js 版本、操作系统等
+      placeholder: |
+        - 工具版本: 1.2.0
+        - Node.js: v24.18.0
+        - 平台: linux x64
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤（可选）
+      description: 如果是一个 bug，请提供复现步骤
+      placeholder: |
+        1. 运行 `repo-audit --repo /path/to/repo`
+        2. 看到...
+        3. 期望看到...
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 反馈类型
+      options:
+        - Bug 报告
+        - 功能建议
+        - 文档问题
+        - 性能问题
+        - 其他
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: 确认
+      options:
+        - label: 我已搜索过现有 Issues，确认此问题未被报告过
+          required: false
+        - label: 我理解这是社区贡献的工具，反馈不保证被处理
+          required: false
