@@ -29,7 +29,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          # npm>=11.5.1 支持 OIDC Trusted Publishing；npm@12 要求 node ^22.22.2
+          # runner 用 node 22 的 setup-node 自带 npm≥11.5.1，可省去全局升级 npm
       - name: 'Guard: tag version matches package.json'
         run: |
           EXPECTED="refs/tags/v$(node -p "require('./package.json').version")"
@@ -45,8 +47,12 @@ jobs:
         run: node --test
       - name: Publish to npm (OIDC trusted publishing)
         run: |
-          npm install -g npm@latest
+          # OIDC Trusted Publishing 要求 npm>=11.5.1（node 22 runner 自带满足；
+          # 仅当自带版本过旧时兜底升级到 npm@11 —— 避免全局 npm@latest 需要 node>=22.22）
           echo "npm version: $(npm --version)"
+          if ! npm --version | grep -qE '^(11\.(5\.[1-9]|[6-9]|[0-9]{2})|1[2-9]|2[0-9])'; then
+            npm install -g npm@11
+          fi
           VERSION="$(node -p "require('./package.json').version")"
           if [[ "$VERSION" == *-* ]]; then
             echo "prerelease $VERSION → dist-tag next"
