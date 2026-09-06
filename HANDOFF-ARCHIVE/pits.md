@@ -47,6 +47,8 @@
 ## P-005: HTTPS git push 挂起（历史坑，复测自愈）
 
 - **发现时间**：2026-09-06 前次 session 记录（HANDOFF §3 风险提醒）
-- **复测**：2026-09-06 本轮 4 次 HTTPS push（master×2、tag×2）全部秒级成功，无挂起
-- **结论**：坑未复现，判定自愈；保留观察记录，不删除
-- **副作用残留**：push 时 `git: 'credential-gh' is not a git command` 警告——远端 URL 内嵌凭证与 credential helper 配置不匹配所致，推送实际成功，无害噪音
+- **复测一**：2026-09-06 上午 4 次 HTTPS push（master×2、tag×2）全部秒级成功 → 当时误判自愈
+- **复测二（复发）**：2026-09-06 下午 push 报 `GnuTLS recv error (-110): The TLS connection was non-properly terminated`，重试一次直接 120s 超时挂起
+- **结论修正**：**间歇性坑，非自愈**——上午成功是侥幸窗口，下午复发推翻自愈判定
+- **规避**：远端已切 `git@github.com:NinjaSln-labs/repo-audit.git`（SSH），push 立即恢复秒级
+- **副作用残留**：HTTPS URL 时期 push 时 `git: 'credential-gh' is not a git command` 警告——远端 URL 内嵌凭证与 credential helper 配置不匹配所致，推送实际成功，无害噪音；切 SSH 后此噪音消失
