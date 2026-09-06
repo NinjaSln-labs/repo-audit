@@ -62,3 +62,13 @@
 - **为什么本地没测出**：本地直跑 `node repo-audit.mjs` 时两者一致；只有 npm 安装形态才有 symlink 差异——**入口/路径类改动必须过「npm pack → 干净目录安装 → bin 实测」链**
 - **修复**：`realpathSync(process.argv[1])` 归一化后再比对（`d833c87`，v1.3.1）
 - **回归验证**：干净 prefix 安装后三复现仓 + 反例仓实测，行为全部符合预期
+
+## P-007: win32 URL/路径转换手工拼接 — Windows 全形态静默不执行（v1.3.1 回归）
+
+- **发现时间**：2026-09-06（Issue#4 用户反馈，Windows 11 + Node v24.19.0 实测）
+- **症状**：v1.3.1 在 Windows 上 `repo-audit` 任何参数组合都 exit 0 无输出（CLI 全形态 DOA）
+- **根因**：P-006 修复引入的守卫 `import.meta.url === `file://${realpathSync(argv[1])}``——win32 上 realpathSync 返回反斜杠路径，手工拼接产出非法 URL 形态 `file://C:\Users\...`（双斜杠+反斜杠），而 import.meta.url 是 `file:///C:/Users/...`（三斜杠+正斜杠），两侧永不相等 → isDirectRun 恒 false → main() 永不执行
+- **连带坑**：修复过程中自写的回归测试也踩了同类坑——`new URL(x).pathname` 在 win32 产出 `/D:/...`（前导斜杠+盘符），不能直接 realpathSync（ENOENT `D:\D:`）——CI windows-latest 矩阵首跑抓到
+- **修复**：`pathToFileURL(realpathSync(argv[1])).href`（Issue#4 反馈者方案，win32 实测背书）+ 测试改 `fileURLToPath`（`a758398` + `d8b89a0`，v1.3.2）
+- **配套加固**：守卫不命中时 stderr 诊断提示（不再静默 exit 0）；CI 加 windows-latest 矩阵 + npm pack→安装→bin smoke；command 检查器 win32 Git Bash 探测
+- **教训**：**win32 URL↔路径转换必须走 node:url 的 pathToFileURL/fileURLToPath 正解，禁止手工拼接**；入口/路径类代码本地 Linux 全绿不算数，必须过 CI windows 矩阵实跑
