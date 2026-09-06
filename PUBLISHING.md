@@ -4,14 +4,16 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | `repo-audit-tool` v1.2.2（latest，CI 自动发布） |
+| npm | `repo-audit-tool` v1.2.3（latest，CI 自动发布） |
 | GitHub | `NinjaSln-labs/repo-audit` master；发版 tag `v*` |
 | 本地验证 | 自审计 100/A，验证链 4/4，测试 3/3，CI 全绿 |
 
 ## 版本历史
 
-- **1.2.2** — publish CI 修复：node 20→22 + npm 条件升级，修复 EBADENGINE；
+- **1.2.3** — package.json 补充 `repository` 字段，修复 npm provenance E422；
   首次 Trusted Publisher（OIDC）tag 触发自动发布（2026-09-06）
+- **1.2.2** — publish CI 修复：node 20→22 + npm 条件升级，修复 EBADENGINE；
+  tag 发布因 npm 已存在 1.2.1 未出包（OIDC 鉴权链路已验证通过）（2026-09-06）
 - **1.2.1** — README 链接改为绝对 URL（修复 npm 页面 404）；手动发布（2026-09-06）
 - **1.2.0** — 开源就绪：补充 AGENTS.md、CI/publish workflow 适配、json_field monorepo 感知、
   fallback_field 数组格式修复、英文 README、参数类型校验、占位符残留扫描（2026-09-06）
