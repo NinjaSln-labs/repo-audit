@@ -844,7 +844,14 @@ function runCheck(rule, repoPath, mpj = null) {
     }
 
     case 'json_field': {
-      const content = readFileSafe(join(repoPath, params?.path))
+      // P6: monorepo 感知 — package.json 不在根时 fallback 到 workspace 目录
+      let actualPath = join(repoPath, params?.path)
+      let workspaceHint = ''
+      if (!readFileSafe(actualPath) && params?.path === 'package.json' && mpj) {
+        actualPath = mpj.path
+        workspaceHint = `（workspace: ${mpj.dir}）`
+      }
+      const content = readFileSafe(actualPath)
       if (!content) { passed = false; evidence = '文件不存在'; break }
       try {
         const obj = JSON.parse(content)
@@ -857,19 +864,30 @@ function runCheck(rule, repoPath, mpj = null) {
         }
         if (!missing) {
           passed = val !== undefined && val !== null
-          evidence = `字段 ${params.field} = ${JSON.stringify(val)?.slice(0, 100)}`
+          evidence = `字段 ${params.field} = ${JSON.stringify(val)?.slice(0, 100)}${workspaceHint}`
         }
         // P1-2 fix: 支持 fallback_field（如 peerDeps 不存在时检查 devDeps）
+        // 支持两种格式：数组 ["deps", "peerDeps", "devDeps"] 或字符串 "deps"（点路径）
         if (!passed && params?.fallback_field) {
-          const fbFields = params.fallback_field.split('.')
-          let fbVal = obj
-          for (const f of fbFields) {
-            if (fbVal === undefined || fbVal === null) { break }
-            fbVal = fbVal[f]
-          }
-          if (fbVal !== undefined && fbVal !== null) {
-            passed = true
-            evidence = `字段 ${params.field} 不存在，但 ${params.fallback_field} = ${JSON.stringify(fbVal)?.slice(0, 100)}`
+          const fbFields = Array.isArray(params.fallback_field)
+            ? params.fallback_field
+            : params.fallback_field.split('.')
+          // 对每个候选字段，尝试在 obj 中查找
+          for (const candidate of fbFields) {
+            const segs = Array.isArray(candidate) ? candidate : candidate.split('.')
+            let fbVal = obj
+            for (const f of segs) {
+              if (fbVal === undefined || fbVal === null) break
+              fbVal = fbVal[f]
+            }
+            if (fbVal !== undefined && fbVal !== null) {
+              passed = true
+              const matchedField = Array.isArray(params.fallback_field)
+                ? String(candidate)
+                : params.fallback_field
+              evidence = `字段 ${params.field} 不存在，但 ${matchedField} = ${JSON.stringify(fbVal)?.slice(0, 100)}${workspaceHint}`
+              break
+            }
           }
         }
       } catch { passed = false; evidence = 'JSON 解析失败' }
