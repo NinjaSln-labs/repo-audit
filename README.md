@@ -55,10 +55,11 @@ repo-audit/
 
 ## 📚 文档
 
-- [人类手册](docs/repo-audit/HUMAN-GUIDE.md) — 完整使用说明
-- [Agent 手册](docs/repo-audit/AGENT-GUIDE.md) — 机器可读的操作协议
-- [审计方法论](AUDIT.md)
-- [最佳实践标准](BEST-PRACTICES.md)
+- [人类手册](https://github.com/NinjaSln-labs/repo-audit/blob/master/docs/repo-audit/HUMAN-GUIDE.md) — 完整使用说明
+- [Agent 手册](https://github.com/NinjaSln-labs/repo-audit/blob/master/docs/repo-audit/AGENT-GUIDE.md) — 机器可读的操作协议
+- [审计方法论](https://github.com/NinjaSln-labs/repo-audit/blob/master/AUDIT.md)
+- [最佳实践标准](https://github.com/NinjaSln-labs/repo-audit/blob/master/BEST-PRACTICES.md)
+- [GitHub Pages](https://ninjasln-labs.github.io/repo-audit/) — 在线文档
 
 ## 🛠️ 开发
 

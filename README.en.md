@@ -55,10 +55,11 @@ repo-audit/
 
 ## 📚 Documentation
 
-- [Human Guide](docs/repo-audit/HUMAN-GUIDE.md) — Full usage documentation
-- [Agent Guide](docs/repo-audit/AGENT-GUIDE.md) — Machine-readable operation protocol
-- [Audit Methodology](AUDIT.md)
-- [Best Practices](BEST-PRACTICES.md)
+- [Human Guide](https://github.com/NinjaSln-labs/repo-audit/blob/master/docs/repo-audit/HUMAN-GUIDE.md) — Full usage documentation
+- [Agent Guide](https://github.com/NinjaSln-labs/repo-audit/blob/master/docs/repo-audit/AGENT-GUIDE.md) — Machine-readable operation protocol
+- [Audit Methodology](https://github.com/NinjaSln-labs/repo-audit/blob/master/AUDIT.md)
+- [Best Practices](https://github.com/NinjaSln-labs/repo-audit/blob/master/BEST-PRACTICES.md)
+- [GitHub Pages](https://ninjasln-labs.github.io/repo-audit/) — Online documentation
 
 ## 🛠️ Development
 
