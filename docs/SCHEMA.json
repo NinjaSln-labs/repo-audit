@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ninjasln-labs.github.io/repo-audit/SCHEMA.json",
+  "title": "repo-audit 审计报告 Schema",
+  "description": "repo-audit 工具输出的 JSON 报告格式定义",
+  "type": "object",
+  "required": ["generated_at", "audit_type", "llm_used", "metadata", "summary", "findings"],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "报告生成时间 (ISO 8601)"
+    },
+    "audit_type": {
+      "type": "string",
+      "description": "检测到的仓库分类",
+      "enum": [
+        "dsh-plugin", "python-app", "go-service", "content", "sandbox",
+        "archive", "product-oss", "javascript", "typescript", "java",
+        "python", "rust", "cpp", "dotnet", "php", "ruby", "unknown"
+      ]
+    },
+    "llm_used": {
+      "type": "boolean",
+      "description": "是否使用了 LLM 增强"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["remote", "branch", "commitCount", "fileCount", "lastCommit", "path"],
+      "properties": {
+        "remote": { "type": ["string", "null"], "description": "git remote URL" },
+        "branch": { "type": "string", "description": "当前分支" },
+        "commitCount": { "type": "number", "description": "commit 总数" },
+        "fileCount": { "type": "number", "description": "文件总数" },
+        "lastCommit": { "type": "string", "description": "最近 commit 时间" },
+        "path": { "type": "string", "description": "仓库路径" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["critical", "major", "minor", "info", "pass", "total", "waived", "llmUsed"],
+      "properties": {
+        "critical": { "type": "number", "minimum": 0, "description": "Critical 级发现数" },
+        "major": { "type": "number", "minimum": 0, "description": "Major 级发现数" },
+        "minor": { "type": "number", "minimum": 0, "description": "Minor 级发现数" },
+        "info": { "type": "number", "minimum": 0, "description": "Info 级发现数" },
+        "pass": { "type": "number", "minimum": 0, "description": "通过的检查数" },
+        "total": { "type": "number", "minimum": 1, "description": "总检查数" },
+        "waived": { "type": "number", "minimum": 0, "description": "已豁免的检查数" },
+        "llmUsed": { "type": "boolean" }
+      },
+      "description": "汇总统计。评分公式：score = 100 - (critical×25) - (major×10) - (minor×3)。等级：A≥90, B≥80, C≥70, D≥60, F<60"
+    },
+    "findings": {
+      "type": "array",
+      "description": "审计发现列表",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "domain", "status", "message", "evidence"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "规则 ID",
+            "pattern": "^(DOC|GIT|QUA|SEC|COM|DEP)-\\d{3}[a-z]?$"
+          },
+          "title": { "type": "string", "description": "规则标题" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor", "info"]
+          },
+          "domain": {
+            "type": "string",
+            "enum": ["docs", "git", "quality", "security", "compliance", "dependencies"]
+          },
+          "applies_to": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "适用的仓库分类列表，* 表示全部"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "waived"]
+          },
+          "message": { "type": "string", "description": "通过: '符合'; 失败: 规则描述" },
+          "evidence": { "type": "string", "description": "证据文本" },
+          "hint": { "type": ["string", "null"], "description": "修复建议" },
+          "template_ref": { "type": ["string", "null"], "description": "模板引用" },
+          "waived_reason": { "type": ["string", "null"], "description": "豁免原因" },
+          "waived_since": { "type": ["string", "null"], "description": "豁免起始日期" }
+        }
+      }
+    }
+  }
+}

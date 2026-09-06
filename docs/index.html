@@ -4,6 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>repo-audit 文档</title>
+
+  <!-- JSON-LD 结构化数据 — AI Agent 可读 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "①type": "SoftwareApplication",
+    "name": "repo-audit",
+    "url": "https://github.com/NinjaSln-labs/repo-audit",
+    "downloadUrl": "https://www.npmjs.com/package/repo-audit-tool",
+    "softwareVersion": "1.2.1",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Node.js >= 18",
+    "license": "MIT",
+    "description": "仓库标准化审计工具 + 工程脚手架生成器（零依赖）",
+    "programmingLanguage": "JavaScript ESM",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "documentation": [
+      { "name": "AGENT-INDEX.json", "url": "https://ninjasln-labs.github.io/repo-audit/AGENT-INDEX.json", "format": "json" },
+      { "name": "SCHEMA.json", "url": "https://ninjasln-labs.github.io/repo-audit/SCHEMA.json", "format": "json-schema" },
+      { "name": "AGENT-PROTOCOL.md", "url": "https://ninjasln-labs.github.io/repo-audit/AGENT-PROTOCOL.md", "format": "markdown" },
+      { "name": "HUMAN-GUIDE.md", "url": "https://ninjasln-labs.github.io/repo-audit/repo-audit/HUMAN-GUIDE.md", "format": "markdown" },
+      { "name": "AGENT-GUIDE.md", "url": "https://ninjasln-labs.github.io/repo-audit/repo-audit/AGENT-GUIDE.md", "format": "markdown" }
+    ]
+  }
+  </script>
   <style>
     :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --accent-hover: #79c0ff; --green: #3fb950; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -61,12 +86,13 @@
   <div class="nav-bar">
     <a href="https://github.com/NinjaSln-labs/repo-audit" style="font-weight:700;color:var(--text);text-decoration:none;">repo-audit</a>
     <div class="nav-links">
+      <a href="AGENT-INDEX.json">🤖 Agent 索引</a>
+      <a href="SCHEMA.json">📐 Schema</a>
+      <a href="AGENT-PROTOCOL.md">📖 协议</a>
       <a href="repo-audit/HUMAN-GUIDE.md">使用手册</a>
       <a href="repo-audit/AGENT-GUIDE.md">Agent 手册</a>
       <a href="../AUDIT.md">审计方法论</a>
       <a href="../BEST-PRACTICES.md">最佳实践</a>
-      <a href="../REPO-CLASSIFICATION.md">分类检测</a>
-      <a href="../PUBLISHING.md">发布流程</a>
     </div>
   </div>
 
@@ -88,6 +114,32 @@
     <div class="stat"><div class="stat-value">18</div><div class="stat-label">仓库分类</div></div>
     <div class="stat"><div class="stat-value">15+</div><div class="stat-label">LLM 提供商</div></div>
     <div class="stat"><div class="stat-value">0</div><div class="stat-label">npm 依赖</div></div>
+  </div>
+
+  <!-- Agent 入口 -->
+  <div class="agent-entry" style="background:#0d2137;border:1px solid #1f6feb;border-radius:8px;padding:1.5rem;margin:2rem 0;">
+    <h2 style="color:#58a6ff;font-size:1.3rem;margin-bottom:1rem;">🤖 AI Agent 入口</h2>
+    <p style="color:#8b949e;margin-bottom:1rem;">Agent 可读取以下结构化文档，自动理解工具协议、输出格式和调用方式：</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;">
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:1rem;">
+        <a href="AGENT-INDEX.json" style="color:#58a6ff;text-decoration:none;font-weight:600;">📋 AGENT-INDEX.json</a>
+        <p style="color:#8b949e;font-size:0.85rem;margin-top:0.3rem;">机器可读文档索引<br>包含工具参数、退出码、环境变量、文档结构</p>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:1rem;">
+        <a href="SCHEMA.json" style="color:#58a6ff;text-decoration:none;font-weight:600;">📐 SCHEMA.json</a>
+        <p style="color:#8b949e;font-size:0.85rem;margin-top:0.3rem;">JSON Schema 定义<br>用于验证审计报告输出格式</p>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:6px;padding:1rem;">
+        <a href="AGENT-PROTOCOL.md" style="color:#58a6ff;text-decoration:none;font-weight:600;">📖 AGENT-PROTOCOL.md</a>
+        <p style="color:#8b949e;font-size:0.85rem;margin-top:0.3rem;">Agent 操作协议<br>调用方式、输出解析、决策树、错误处理</p>
+      </div>
+    </div>
+    <pre style="margin-top:1rem;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:1rem;font-size:0.85rem;"><code># Agent 一键获取文档索引
+curl -s https://ninjasln-labs.github.io/repo-audit/AGENT-INDEX.json | jq '.tool.invocation'
+
+# 验证审计报告
+jq --argfile schema https://ninjasln-labs.github.io/repo-audit/SCHEMA.json \
+  'empty as $_ | ., (input)' audit-report.json &gt; /dev/null</code></pre>
   </div>
 
   <div class="cards">

@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "repo-audit 文档索引",
+  "description": "AI Agent 可读的文档索引 — 包含所有文档的元数据、结构、和调用协议",
+  "version": "1.2.1",
+  "updated": "2026-09-06",
+  "repo": "NinjaSln-labs/repo-audit",
+  "npm": "repo-audit-tool",
+  "pages": "https://ninjasln-labs.github.io/repo-audit/",
+
+  "entry_points": {
+    "json_index": "/AGENT-INDEX.json",
+    "schema": "/SCHEMA.json",
+    "protocol": "/AGENT-PROTOCOL.md",
+    "human_guide": "/repo-audit/HUMAN-GUIDE.md",
+    "agent_guide": "/repo-audit/AGENT-GUIDE.md"
+  },
+
+  "tool": {
+    "name": "repo-audit",
+    "description": "仓库标准化审计工具 + 工程脚手架生成器（零依赖）",
+    "bin": "repo-audit",
+    "version": "1.2.1",
+    "language": "JavaScript (ESM)",
+    "runtime": "Node.js >= 18",
+    "dependencies": [],
+    "license": "MIT",
+
+    "invocation": {
+      "command": "repo-audit [options]",
+      "options": {
+        "--repo": { "type": "string", "default": ".", "description": "目标仓库路径" },
+        "--type": { "type": "string", "description": "强制指定分类（跳过自动检测）" },
+        "--format": { "type": "string", "enum": ["md", "json", "both"], "default": "both", "description": "输出格式" },
+        "--output": { "type": "string", "default": "<repo>/audit-report/", "description": "输出目录" },
+        "--llm-provider": { "type": "string", "description": "LLM 协议：openai/anthropic 或厂商别名" },
+        "--llm-model": { "type": "string", "description": "模型名称" },
+        "--strict": { "type": "boolean", "default": false, "description": "严格模式：Critical/Major 即 exit 1" },
+        "--rules": { "type": "string", "description": "自定义规则 YAML（可多次）" },
+        "--dim": { "type": "string", "description": "只审计指定维度（可多次）" },
+        "--feedback": { "type": "string", "description": "提交反馈（创建 GitHub Issue）" },
+        "--help": { "type": "boolean", "description": "显示帮助" }
+      },
+
+      "exit_codes": {
+        "0": "审计通过（无 Critical/Major 或 --strict 未启用）",
+        "1": "有 Critical/Major 发现且 --strict 启用",
+        "2": "参数错误",
+        "3": "目标不是 git 仓库"
+      }
+    },
+
+    "environment_variables": {
+      "LLM_PROVIDER": "LLM 协议（openai/anthropic/none），也可用厂商别名如 deepseek/qwen/glm",
+      "LLM_API_KEY": "API Key（必须手动指定）",
+      "LLM_MODEL": "模型名称",
+      "LLM_BASE_URL": "自定义 API 端点（OpenAI 兼容厂商必填）",
+      "REPO_AUDIT_TYPES": "自定义分类列表（JSON 数组）"
+    }
+  },
+
+  "audit": {
+    "dimensions": [
+      {
+        "id": "docs",
+        "label": "文档",
+        "rules": ["DOC-001", "DOC-002", "DOC-003", "DOC-003b", "DOC-004", "DOC-005", "DOC-006", "DOC-007"],
+        "description": "README/LICENSE/CONTRIBUTING/SECURITY 等文档完整性"
+      },
+      {
+        "id": "git",
+        "label": "Git",
+        "rules": ["GIT-001", "GIT-002", "GIT-003", "GIT-004"],
+        "description": "commit 规范、分支策略、scaffold 管理"
+      },
+      {
+        "id": "quality",
+        "label": "质量",
+        "rules": ["QUA-001", "QUA-002", "QUA-003", "QUA-004", "QUA-005"],
+        "description": "构建配置、测试、lint、typecheck"
+      },
+      {
+        "id": "security",
+        "label": "安全",
+        "rules": ["SEC-001", "SEC-002", "SEC-003", "SEC-004"],
+        "description": "密钥泄露、依赖漏洞、权限配置"
+      }
+    ],
+
+    "scoring": {
+      "formula": "score = 100 - (critical × 25) - (major × 10) - (minor × 3)",
+      "grades": {
+        "A": ">= 90",
+        "B": ">= 80",
+        "C": ">= 70",
+        "D": ">= 60",
+        "F": "< 60"
+      },
+      "note": "score 和 grade 不在 JSON 输出中，Agent 需根据 summary 字段自行计算"
+    },
+
+    "categories": [
+      "dsh-plugin", "python-app", "go-service", "content", "sandbox",
+      "archive", "product-oss", "javascript", "typescript", "java",
+      "python", "rust", "cpp", "dotnet", "php", "ruby", "unknown"
+    ]
+  },
+
+  "documents": [
+    {
+      "id": "human-guide",
+      "title": "人类使用手册",
+      "path": "/repo-audit/HUMAN-GUIDE.md",
+      "url": "https://ninjasln-labs.github.io/repo-audit/repo-audit/HUMAN-GUIDE.md",
+      "audience": "human",
+      "sections": [
+        "一、安装",
+        "二、快速开始",
+        "三、命令行参数",
+        "四、环境变量",
+        "五、输出说明",
+        "六、退出码",
+        "七、审计维度说明",
+        "八、扩展指南",
+        "九、故障排查",
+        "十、与 scaffold 的配合",
+        "十一、操作授权与完成路径",
+        "十二、新特性说明"
+      ]
+    },
+    {
+      "id": "agent-guide",
+      "title": "Agent 操作手册",
+      "path": "/repo-audit/AGENT-GUIDE.md",
+      "url": "https://ninjasln-labs.github.io/repo-audit/repo-audit/AGENT-GUIDE.md",
+      "audience": "agent",
+      "sections": [
+        "一、工具定位",
+        "二、调用协议",
+        "三、输出解析",
+        "四、标准操作流程",
+        "五、错误处理协议",
+        "六、性能参考",
+        "七、Agent 决策树",
+        "八、操作授权与完成路径",
+        "九、快速参考卡",
+        "十、反馈通道"
+      ]
+    },
+    {
+      "id": "audit-methodology",
+      "title": "审计方法论",
+      "path": "/AUDIT.md",
+      "url": "https://github.com/NinjaSln-labs/repo-audit/blob/master/AUDIT.md",
+      "audience": "both",
+      "description": "评分体系、规则设计、维度划分"
+    },
+    {
+      "id": "best-practices",
+      "title": "最佳实践标准",
+      "path": "/BEST-PRACTICES.md",
+      "url": "https://github.com/NinjaSln-labs/repo-audit/blob/master/BEST-PRACTICES.md",
+      "audience": "both",
+      "description": "工程仓库应满足的标准化检查项"
+    },
+    {
+      "id": "classification",
+      "title": "分类检测说明",
+      "path": "/REPO-CLASSIFICATION.md",
+      "url": "https://github.com/NinjaSln-labs/repo-audit/blob/master/REPO-CLASSIFICATION.md",
+      "audience": "both",
+      "description": "18 种仓库类型识别逻辑，置信度评分"
+    },
+    {
+      "id": "templates",
+      "title": "脚手架模板",
+      "path": "/templates/README.md",
+      "url": "https://github.com/NinjaSln-labs/repo-audit/blob/master/templates/README.md",
+      "audience": "both",
+      "description": "从零生成符合规范的工程脚手架"
+    },
+    {
+      "id": "schema",
+      "title": "审计报告 JSON Schema",
+      "path": "/SCHEMA.json",
+      "url": "https://ninjasln-labs.github.io/repo-audit/SCHEMA.json",
+      "audience": "agent",
+      "format": "json-schema",
+      "description": "JSON Schema 定义，用于验证审计报告输出"
+    }
+  ],
+
+  "feedback": {
+    "description": "反馈通道 — Agent 可通过 GitHub Issues API 检测和处理用户反馈",
+    "label": "audit-feedback",
+    "repo": "NinjaSln-labs/repo-audit",
+
+    "detect": {
+      "command": "gh issue list --repo NinjaSln-labs/repo-audit --label audit-feedback --state open --json number,title,createdAt,body",
+      "description": "列出未处理的反馈"
+    },
+    "view": {
+      "command": "gh issue view <NUMBER> --repo NinjaSln-labs/repo-audit --json title,body,labels,createdAt",
+      "description": "获取单条反馈详情"
+    },
+    "close": {
+      "command": "gh issue close <NUMBER> --repo NinjaSln-labs/repo-audit --comment '已处理：[处理说明]'",
+      "description": "反馈已处理，关闭 Issue"
+    },
+    "create": {
+      "command": "node repo-audit.mjs --feedback '<反馈内容>'",
+      "description": "通过 CLI 创建反馈 Issue（自动预填环境信息）"
+    },
+
+    "priorities": [
+      { "level": "critical", "sla": "24h", "description": "工具崩溃/数据损坏" },
+      { "level": "major", "sla": "72h", "description": "功能严重受损" },
+      { "level": "minor", "sla": "1周", "description": "功能部分受损" },
+      { "level": "info", "sla": "排期", "description": "建议改进" }
+    ]
+  },
+
+  "quick_start": {
+    "install": "npm install -g repo-audit-tool",
+    "audit": "repo-audit --repo /path/to/repo",
+    "json_output": "repo-audit --repo /path/to/repo --format json",
+    "scaffold": "node templates/scaffold.mjs --type dsh-plugin --name my-plugin",
+    "strict_mode": "repo-audit --repo /path/to/repo --strict",
+    "custom_rules": "repo-audit --repo /path/to/repo --rules my-rules.yaml",
+    "llm_enhanced": "LLM_API_KEY=sk-xxx repo-audit --repo . --llm-provider deepseek"
+  },
+
+  "changelog": {
+    "1.2.1": "README 链接改为绝对 URL（修复 npm 页面 404）",
+    "1.2.0": "开源就绪：AGENTS.md、CI/publish workflow、json_field monorepo、fallback_field 数组、英文 README、参数类型校验、占位符扫描"
+  }
+}
