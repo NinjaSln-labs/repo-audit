@@ -44,7 +44,7 @@
 - **修复**：工作流不改（版本守卫语义正确）；流程约束——打 tag 前先 `npm view <pkg> versions` 确认版本未占用，已占用则 bump
 - **流程落点**：已写入 HANDOFF §4「npm 发版链」坑区与 PUBLISHING.md
 
-## P-005: HTTPS git push 挂起（历史坑，复测自愈）
+## P-005: HTTPS git push 间歇性挂起（历史坑，已根治）
 
 - **发现时间**：2026-09-06 前次 session 记录（HANDOFF §3 风险提醒）
 - **复测一**：2026-09-06 上午 4 次 HTTPS push（master×2、tag×2）全部秒级成功 → 当时误判自愈
@@ -53,3 +53,12 @@
 - **规避**：远端已切 `git@github.com:NinjaSln-labs/repo-audit.git`（SSH），push 立即恢复秒级
 - **根治（2026-09-06 用户裁定）**：push 一律 SSH 不用 HTTPS；另配全局重写 `git config --global url."git@github.com:".insteadOf "https://github.com/"`——即使远端被工具改回 HTTPS URL，实际传输仍走 SSH（已实测 HTTPS URL ls-remote/push 均秒级）
 - **副作用残留**：HTTPS URL 时期 push 时 `git: 'credential-gh' is not a git command` 警告——远端 URL 内嵌凭证与 credential helper 配置不匹配所致，推送实际成功，无害噪音；切 SSH 后此噪音消失
+
+## P-006: npm bin symlink 下入口守卫误判 — CLI 静默不执行（v1.3.0 回归）
+
+- **发现时间**：2026-09-06（v1.3.0 发布后实机复测）
+- **症状**：`npm install -g repo-audit-tool` 后跑 `repo-audit --repo …`——exit 0 但零输出，JSON 解析空输入报错
+- **根因**：为修 Issue#1 加的入口守卫 `import.meta.url === \`file://${process.argv[1]}\``——npm 全局安装的 bin 是 **symlink**（`bin/repo-audit → …/lib/node_modules/repo-audit-tool/repo-audit.mjs`），`process.argv[1]` 是 symlink 路径、`import.meta.url` 是真实路径，守卫误判为「被 import」→ main() 不执行
+- **为什么本地没测出**：本地直跑 `node repo-audit.mjs` 时两者一致；只有 npm 安装形态才有 symlink 差异——**入口/路径类改动必须过「npm pack → 干净目录安装 → bin 实测」链**
+- **修复**：`realpathSync(process.argv[1])` 归一化后再比对（`d833c87`，v1.3.1）
+- **回归验证**：干净 prefix 安装后三复现仓 + 反例仓实测，行为全部符合预期
