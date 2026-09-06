@@ -67,7 +67,7 @@
 
 - **发现时间**：2026-09-06（Issue#4 用户反馈，Windows 11 + Node v24.19.0 实测）
 - **症状**：v1.3.1 在 Windows 上 `repo-audit` 任何参数组合都 exit 0 无输出（CLI 全形态 DOA）
-- **根因**：P-006 修复引入的守卫 `import.meta.url === `file://${realpathSync(argv[1])}``——win32 上 realpathSync 返回反斜杠路径，手工拼接产出非法 URL 形态 `file://C:\Users\...`（双斜杠+反斜杠），而 import.meta.url 是 `file:///C:/Users/...`（三斜杠+正斜杠），两侧永不相等 → isDirectRun 恒 false → main() 永不执行
+- **根因**：P-006 修复引入的守卫（比对式 `import.meta.url === "file://" + realpathSync(argv[1])`）——win32 上 realpathSync 返回反斜杠路径，手工拼接产出非法 URL 形态 `file://C:\Users\...`（双斜杠+反斜杠），而 import.meta.url 是 `file:///C:/Users/...`（三斜杠+正斜杠），两侧永不相等 → isDirectRun 恒 false → main() 永不执行
 - **连带坑**：修复过程中自写的回归测试也踩了同类坑——`new URL(x).pathname` 在 win32 产出 `/D:/...`（前导斜杠+盘符），不能直接 realpathSync（ENOENT `D:\D:`）——CI windows-latest 矩阵首跑抓到
 - **修复**：`pathToFileURL(realpathSync(argv[1])).href`（Issue#4 反馈者方案，win32 实测背书）+ 测试改 `fileURLToPath`（`a758398` + `d8b89a0`，v1.3.2）
 - **配套加固**：守卫不命中时 stderr 诊断提示（不再静默 exit 0）；CI 加 windows-latest 矩阵 + npm pack→安装→bin smoke；command 检查器 win32 Git Bash 探测
