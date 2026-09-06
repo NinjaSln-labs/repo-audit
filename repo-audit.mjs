@@ -18,7 +18,7 @@
  *   REPO_AUDIT_TYPES - 自定义分类列表（JSON 数组）
  */
 
-import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSync, realpathSync } from 'node:fs'
 import { join, resolve, dirname, relative } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -1651,8 +1651,9 @@ ${message}
   process.exit(hasCritical && strict ? 1 : 0)
 }
 
-// Issue#1 fix: 入口守卫——仅直接作为 CLI 运行时执行主流程；被 import（测试/编程复用）不跑
-const isDirectRun = import.meta.url === `file://${process.argv[1]}`
+// Issue#1 fix: 入口守卫——仅直接作为 CLI 运行时执行主流程；被 import（测试/编程复用）不跑。
+// argv[1] 经 realpath 归一化（npm bin 是 symlink，直接比对 import.meta.url 会误判）
+const isDirectRun = import.meta.url === `file://${realpathSync(process.argv[1] || '')}`
 if (isDirectRun) {
   main().catch(err => {
     console.error(`✗ 运行时错误: ${err.message}`)
