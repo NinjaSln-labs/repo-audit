@@ -4,12 +4,15 @@
 
 | 项 | 状态 |
 |---|---|
-| npm | `repo-audit-tool` v1.2.0（已发布，latest） |
+| npm | `repo-audit-tool` v1.2.2（latest，CI 自动发布） |
 | GitHub | `NinjaSln-labs/repo-audit` master；发版 tag `v*` |
 | 本地验证 | 自审计 100/A，验证链 4/4，测试 3/3，CI 全绿 |
 
 ## 版本历史
 
+- **1.2.2** — publish CI 修复：node 20→22 + npm 条件升级，修复 EBADENGINE；
+  首次 Trusted Publisher（OIDC）tag 触发自动发布（2026-09-06）
+- **1.2.1** — README 链接改为绝对 URL（修复 npm 页面 404）；手动发布（2026-09-06）
 - **1.2.0** — 开源就绪：补充 AGENTS.md、CI/publish workflow 适配、json_field monorepo 感知、
   fallback_field 数组格式修复、英文 README、参数类型校验、占位符残留扫描（2026-09-06）
   - 首次发布：`npm publish --access public`（手动 bootstrap）
@@ -44,11 +47,11 @@ git push && git push --tags
 ## 首次发布（已完成）
 
 1. **npm 包创建**：`npm publish --access public`（v1.2.0，2026-09-06）
-2. **Trusted Publisher 配置**（下一步）：npmjs.com → 包设置 → Trusted Publisher →
+2. **Trusted Publisher 配置**：npmjs.com → 包设置 → Trusted Publisher →
    - Repository: `NinjaSln-labs/repo-audit`
    - Workflow: `publish.yml`
-   - Branch: `master`
-3. **验证**：`npm view repo-audit-tool dist-tags` → `{ latest: '1.2.0' }` ✓
+   - Branch: `master`（注：tag 触发场景 npm 亦放行，v1.2.2 实测通过）
+3. **验证**：`npm view repo-audit-tool dist-tags` → latest 已更新 ✓
 
 ## 发布后验证
 
