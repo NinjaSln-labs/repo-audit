@@ -1,11 +1,11 @@
 {
-  "name": "@ninjasln-labs/repo-audit",
+  "name": "repo-audit-tool",
   "version": "1.2.0",
   "description": "仓库标准化审计工具 + 工程脚手架生成器（零依赖）",
   "type": "module",
   "main": "repo-audit.mjs",
   "bin": {
-    "repo-audit": "./repo-audit.mjs"
+    "repo-audit": "repo-audit.mjs"
   },
   "scripts": {
     "test": "node --test",
