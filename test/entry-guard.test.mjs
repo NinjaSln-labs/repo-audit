@@ -6,14 +6,15 @@ import assert from 'node:assert'
 import { realpathSync, mkdtempSync, writeFileSync, symlinkSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import { isCliEntry } from '../repo-audit.mjs'
 
 test('isCliEntry：CLI 直跑形态命中（本文件自身恒等式）', () => {
-  // posix: pathToFileURL 与 import.meta.url 语义一致
-  const real = realpathSync(new URL(import.meta.url).pathname)
-  assert.equal(isCliEntry(import.meta.url, new URL(import.meta.url).pathname), true)
-  assert.equal(isCliEntry(pathToFileURL(real).href, real), true)
+  // fileURLToPath 是 URL→路径的正解（win32 上 pathname 是 /D:/... 带前导斜杠，不可直接用）
+  const selfPath = fileURLToPath(import.meta.url)
+  const real = realpathSync(selfPath)
+  assert.equal(isCliEntry(pathToFileURL(real).href, selfPath), true)
+  assert.equal(isCliEntry(import.meta.url, real), true)
 })
 
 test('isCliEntry：symlink 形态命中（P-006 npm bin 场景）', () => {
