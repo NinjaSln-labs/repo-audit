@@ -1,10 +1,10 @@
-# 发布记录：@ninjasln-labs/repo-audit
+# 发布记录：repo-audit-tool
 
 ## 发布状态（2026-09-06 更新）
 
 | 项 | 状态 |
 |---|---|
-| npm | `@ninjasln-labs/repo-audit` v1.2.0（未发布，待首次发布） |
+| npm | `repo-audit-tool` v1.2.0（已发布，latest） |
 | GitHub | `NinjaSln-labs/repo-audit` master；发版 tag `v*` |
 | 本地验证 | 自审计 100/A，验证链 4/4，测试 3/3，CI 全绿 |
 
@@ -12,6 +12,8 @@
 
 - **1.2.0** — 开源就绪：补充 AGENTS.md、CI/publish workflow 适配、json_field monorepo 感知、
   fallback_field 数组格式修复、英文 README、参数类型校验、占位符残留扫描（2026-09-06）
+  - 首次发布：`npm publish --access public`（手动 bootstrap）
+  - 后续发布：Trusted Publisher（OIDC）由 CI 自动发布
 
 ## 发布通道（npm OIDC Trusted Publishing）
 
@@ -23,7 +25,7 @@
 ```sh
 npm version patch --no-git-tag-version
 V="$(node -p "require('./package.json').version")"
-git commit -am "chore: release @ninjasln-labs/repo-audit v$V — <一句话主旨>"
+git commit -am "chore: release repo-audit-tool v$V — <一句话主旨>"
 git tag v$V
 git push && git push --tags
 # CI 接手：审计 → 验证链 → 测试 → 版本守卫 → npm publish
@@ -34,29 +36,25 @@ git push && git push --tags
 ```sh
 npm version prerelease --preid=next --no-git-tag-version
 V="$(node -p "require('./package.json').version")"
-git commit -am "chore: canary @ninjasln-labs/repo-audit v$V" && git tag v$V
+git commit -am "chore: canary repo-audit-tool v$V" && git tag v$V
 git push && git push --tags
-# 实测通过 → 晋级 latest：npm dist-tag add @ninjasln-labs/repo-audit@x.y.z latest
+# 实测通过 → 晋级 latest：npm dist-tag add repo-audit-tool@x.y.z latest
 ```
 
-## 首次发布前置（一次性）
+## 首次发布（已完成）
 
-1. **npm 包创建**：npmjs.com → Create Package → `@ninjasln-labs/repo-audit`（需先创建 `ninjasln-labs` org）
-2. **Trusted Publisher 配置**：包设置 → Trusted Publisher → 填 GitHub repo `NinjaSln-labs/repo-audit`
-   + workflow `publish.yml` + branch `master`（逐字段一致）
-3. **首次 bootstrap**：首版可手动发布：
-   ```sh
-   npm login  # 交互登录 + 2FA
-   npm publish --access public
-   ```
-   随后立即切 Trusted Publishing 由 CI 发布
-4. **验证发布成功**：`npm view @ninjasln-labs/repo-audit dist-tags` + npm 页 provenance 徽章
+1. **npm 包创建**：`npm publish --access public`（v1.2.0，2026-09-06）
+2. **Trusted Publisher 配置**（下一步）：npmjs.com → 包设置 → Trusted Publisher →
+   - Repository: `NinjaSln-labs/repo-audit`
+   - Workflow: `publish.yml`
+   - Branch: `master`
+3. **验证**：`npm view repo-audit-tool dist-tags` → `{ latest: '1.2.0' }` ✓
 
 ## 发布后验证
 
-- 确认 latest 已更新（`npm view @ninjasln-labs/repo-audit dist-tags`）
+- 确认 latest 已更新（`npm view repo-audit-tool dist-tags`）
 - provenance 徽章（npm 包页面）
-- 实机安装路径实测：`npm install -g @ninjasln-labs/repo-audit` → `repo-audit --repo .`
+- 实机安装路径实测：`npm install -g repo-audit-tool` → `repo-audit --repo .`
 
 ## 维护要点
 
