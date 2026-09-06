@@ -17,3 +17,36 @@
 - **关联文件**：`AGENTS.md`（新增）、`CLAUDE.md`（引用修复）、`templates/common/AGENTS-core.md`（模板源）
 - **修复 commit**：待提交
 - **回归测试**：`node repo-audit.mjs --repo . --format json`（DOC-004 虽不检查 javascript 分类，但 repo-audit.mjs 第 356 行 `hasFile(repoPath, 'AGENTS.md')` 加分至 `agent-collab` 分类特征）
+
+---
+
+## P-002: publish workflow EBADENGINE — npm@latest 与 runner node 20 不兼容
+
+- **发现时间**：2026-09-06（Trusted Publisher 首次 tag 验证）
+- **症状**：v1.2.1 tag 触发 publish workflow，`npm install -g npm@latest`（npm@12）报 `EBADENGINE`：要求 node `^22.22.2 || ^24.15.0 || >=26`，runner 实际 node 20.20.2
+- **根因**：npm≥11.5.1 才支持 OIDC Trusted Publishing，原 workflow 用「升级到最新 npm」满足该要求，但 npm@12 的 engine 门槛超出 setup-node 固定的 node 20
+- **修复**：runner 升 node 22（自带 npm 11.19.1 ≥11.5.1），升级步骤改为条件兜底 `npm@11`（`2d63f8a`）
+- **回归验证**：v1.2.2/v1.2.3 tag 的 publish run 均无 EBADENGINE；v1.2.3 `+ repo-audit-tool@1.2.3` 成功
+
+## P-003: npm provenance E422 — package.json 缺 repository 字段
+
+- **发现时间**：2026-09-06（同轮验证）
+- **症状**：OIDC token 交换 201 成功后 `npm publish` 报 422：`package.json: "repository.url" is ""`，expected 匹配 `https://github.com/NinjaSln-labs/repo-audit`
+- **根因**：provenance（`--provenance`）要求包元数据 repository 与实际构建仓库一致；本仓 package.json 从未配置 repository
+- **修复**：package.json 补 `"repository": {"type":"git","url":"https://github.com/NinjaSln-labs/repo-audit"}`（`3220da1`）
+- **回归验证**：v1.2.3 publish 成功，`npm view repo-audit-tool dist.attestations` 返回 SLSA provenance v1
+
+## P-004: npm 版本不可重发 — tag 撞已发布版本
+
+- **发现时间**：2026-09-06（同轮验证）
+- **症状**：v1.2.2 tag 的 publish 报 `You cannot publish over the previously published versions: 1.2.1`（1.2.1 此前已手动发布）
+- **根因**：npm registry 版本一旦发布不可覆盖；workflow 版本守卫只查 tag↔package.json 一致，不查 registry 已存版本
+- **修复**：工作流不改（版本守卫语义正确）；流程约束——打 tag 前先 `npm view <pkg> versions` 确认版本未占用，已占用则 bump
+- **流程落点**：已写入 HANDOFF §4「npm 发版链」坑区与 PUBLISHING.md
+
+## P-005: HTTPS git push 挂起（历史坑，复测自愈）
+
+- **发现时间**：2026-09-06 前次 session 记录（HANDOFF §3 风险提醒）
+- **复测**：2026-09-06 本轮 4 次 HTTPS push（master×2、tag×2）全部秒级成功，无挂起
+- **结论**：坑未复现，判定自愈；保留观察记录，不删除
+- **副作用残留**：push 时 `git: 'credential-gh' is not a git command` 警告——远端 URL 内嵌凭证与 credential helper 配置不匹配所致，推送实际成功，无害噪音
