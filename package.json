@@ -8,6 +8,8 @@
     "repo-audit": "./repo-audit.mjs"
   },
   "scripts": {
+    "test": "node --test",
+    "verify": "node verify.mjs",
     "audit": "node repo-audit.mjs --repo .",
     "scaffold": "node templates/scaffold.mjs"
   },
