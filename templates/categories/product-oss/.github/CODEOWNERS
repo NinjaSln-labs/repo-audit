@@ -1,0 +1,6 @@
+# 默认 owner：所有文件的兜底（最后一行匹配优先，越靠后越具体；owner 须有 write 权限）
+*                                        @<org>/maintainers
+
+# 关键路径单独锁定（按本库实际调整；org 团队按实际替换）
+/.github/                                @<org>/maintainers
+/.github/CODEOWNERS                      @<org>/maintainers

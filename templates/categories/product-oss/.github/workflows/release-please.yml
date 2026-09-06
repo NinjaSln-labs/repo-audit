@@ -1,0 +1,39 @@
+# Release PR + tag + GitHub Release 全自动：解析 Conventional Commits
+# （release-please-action 最新 v5.0.0（node24）；保守可 pin @v4；正式仓库 uses 固定到 <commit-SHA>）
+name: release-please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write        # 更新 CHANGELOG/版本号、打 tag、发 Release
+  issues: write
+  pull-requests: write   # 创建/更新 Release PR
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        uses: googleapis/release-please-action@v5   # TODO: 固定 SHA
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          # 默认 GITHUB_TOKEN 即可建 Release PR/tag/Release；但 GITHUB_TOKEN 触发的事件
+          # 不会再触发其他 workflow——Release PR 合并后要自动跑发布（npm/PyPI/GoReleaser）
+          # 时改用 PAT：token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      # ——（可选）Release 合并后自动发布（按语言基类的 publish/release 工作流衔接）——
+      # 方式 A：这里直接跑发布步骤（需 PAT 触发下游）；
+      # 方式 B（推荐）：release-please 打的 tag 天然触发语言基类的 publish/release.yml——
+      #   此时无需本段，且 token 不必换 PAT。二选一，避免双发布。
+      # - uses: actions/checkout@<commit-SHA>
+      #   if: ${{ steps.release.outputs.release_created }}
+      # - uses: actions/setup-node@<commit-SHA>   # 按语言替换
+      #   if: ${{ steps.release.outputs.release_created }}
+      # - run: npm ci && npm publish
+      #   if: ${{ steps.release.outputs.release_created }}
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,0 +1,105 @@
+rules:
+  - id: DOC-001
+    title: "README.md 存在且非空"
+    severity: critical
+    domain: docs
+    applies_to: ["*"]
+    check: file_exists
+    params:
+      paths: ["README.md"]
+    description: "每个仓库必须有 README.md；结构应符合 templates/common/README-core.md"
+    template_ref: "templates/common/README-core.md"
+    fix_hint: "参考 templates/common/README-core.md"
+
+  - id: DOC-002
+    title: "双语 README 标配"
+    severity: minor
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths: ["README.en.md"]
+    description: "工程类仓库应有英文镜像 README.en.md（README-core 双语策略）"
+    note: "sandbox/content 类不设硬性要求"
+
+  - id: DOC-003
+    title: "LICENSE 存在且许可声明一致"
+    severity: critical
+    domain: docs
+    applies_to: ["*"]
+    check: file_exists
+    params:
+      paths: ["LICENSE", "LICENSE.txt", "LICENSE.md"]
+    description: "开源仓库必须有 LICENSE 文件；许可类型（MIT/Apache-2.0/GPL/BSD 等）均为合规"
+    template_ref: "templates/repo-root/LICENSE"
+
+  - id: DOC-003b
+    title: "package.json license 字段与 LICENSE 文件一致"
+    severity: minor
+    domain: docs
+    applies_to: ["javascript", "npm-package"]
+    check: json_field
+    params:
+      path: "package.json"
+      field: "license"
+      fallback_field: ["dependencies", "peerDependencies", "devDependencies"]
+    description: "package.json 应有 license 字段（SPDX 标识）"
+    note: "仅对含 package.json 的 JS 项目检查"
+
+  - id: DOC-004
+    title: "AGENTS.md 存在且含 AI 协作守则"
+    severity: major
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "product-oss"]
+    check: file_contains
+    params:
+      path: "AGENTS.md"
+      patterns: ["AI 协作守则", "完成的定义"]
+    description: "AI 协作仓库应有 AGENTS.md，且含 AI 协作守则（templates/common/AGENTS-core.md）"
+    template_ref: "templates/common/AGENTS-core.md"
+    note: "无 AI 协作需求的个人/solo 项目豁免"
+
+  - id: DOC-005
+    title: "CONTRIBUTING.md 存在"
+    severity: minor
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "go-service", "product-oss", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths: ["CONTRIBUTING.md"]
+    description: "工程仓库应有贡献指南"
+    template_ref: "templates/common/CONTRIBUTING-core.md"
+
+  - id: DOC-006
+    title: "DEVELOPMENT.md 存在（工程类）"
+    severity: minor
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths: ["DEVELOPMENT.md"]
+    description: "工程仓库应有开发流程文档"
+    template_ref: "templates/common/DEVELOPMENT-core.md"
+    note: "sandbox/content 豁免"
+
+  - id: DOC-007
+    title: "PUBLISHING.md 存在（有发布面）"
+    severity: minor
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "go-service"]
+    check: file_exists
+    params:
+      paths: ["PUBLISHING.md"]
+    description: "有发布流程的仓库应有发布文档"
+    template_ref: "templates/common/PUBLISHING-core.md"
+
+  - id: DOC-008
+    title: "SECURITY.md 存在"
+    severity: minor
+    domain: docs
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths: ["SECURITY.md"]
+    description: "有安全关注的仓库应有漏洞报告渠道"
+    template_ref: "templates/common/SECURITY-core.md"

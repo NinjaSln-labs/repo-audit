@@ -1,0 +1,86 @@
+# .goreleaser.yaml — GoReleaser v2 最小可用配置（Go 服务发布）
+#
+# 本地验证：goreleaser check && goreleaser release --snapshot --clean
+# 来源依据：goreleaser.com/customization（v2.18，2026-09 核实）
+# 使用提示：project_name 与 main 路径按本库实际改；可选段（SBOM/cosign/容器）按需解开。
+
+version: 2
+
+project_name: <name>
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: <name>
+    main: ./cmd/<name>
+    binary: <name>
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    # 默认 ldflags 已注入 -s -w 与 main.version={{.Version}} / main.commit / main.date；
+    # 需要显式控制时解开：
+    # ldflags:
+    #   - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+
+archives:
+  - id: <name>
+    formats: [tar.gz]          # v2.6+ 用复数 formats（单数 format 已废弃）
+    format_overrides:
+      - goos: windows
+        format: zip    # goreleaser v2：override 内为单数 format（外层才是复数 formats）
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README*
+      - LICENSE*
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+changelog:
+  # 按 conventional commits 分组（与 CONTRIBUTING 提交规范同源）
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+release:
+  # GoReleaser 用 GITHUB_TOKEN 建 GitHub Release 并上传全部产物
+  # draft: true   # 想人工确认后再发布就打开
+
+# ── 可选段（小库务实取舍：默认注释；启用需同步改 release.yml）──
+# SBOM（需 workflow 装 anchore/sbom-action/download-syft）：
+# sboms:
+#   - artifacts: archive        # 每个 archive 生成 .sbom.json（syft）
+
+# cosign keyless 签名：只签 checksum 文件（业界惯例，一份覆盖全链）
+# 需 workflow 装 sigstore/cosign-installer + permissions 加 id-token: write
+# signs:
+#   - cmd: cosign
+#     signature: "${artifact}.sigstore.json"
+#     artifacts: checksum
+#     args: ["sign-blob", "--bundle=${signature}", "${artifact}", "--yes"]
+
+# 容器镜像（dockers_v2，GoReleaser ≥ v2.12；buildx 一次 build --push 出多平台 manifest）
+# 需 workflow 装 buildx + login GHCR；与下方 buildx 独立方案二选一，不要同时开
+# dockers_v2:
+#   - images: [ghcr.io/<org>/<name>]
+#     tags: ["v{{ .Version }}", latest]
+#     platforms: [linux/amd64, linux/arm64]

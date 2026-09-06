@@ -1,0 +1,13 @@
+#!/bin/sh
+# 验证链前门（Go 版）：提交时强制 make verify（gofmt → vet → test → build 单源）。
+# 启用方式：git config core.hooksPath .githooks
+# 依赖：本地 Go 工具链（未就绪时 --no-verify 并注明）。
+
+echo "pre-commit：执行验证链 make verify ..."
+make verify
+code=$?
+if [ $code -ne 0 ]; then
+  echo ""
+  echo "✗ 验证链 FAIL：修复后重试；确属中间态请 commit --no-verify 并在说明注明。"
+  exit 1
+fi

@@ -1,0 +1,28 @@
+# Dependabot：依赖与 CI action 的自动升级（分组合 PR，控制噪音）
+# 起点配置；库类可加 versioning-strategy: widen；schedule 错开到周初
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 10
+
+  # 按语言基类增删 ecosystem：npm（dsh-plugin）/ pip（python-app）/ gomod（go-service）
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    groups:
+      deps-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    open-pull-requests-limit: 10

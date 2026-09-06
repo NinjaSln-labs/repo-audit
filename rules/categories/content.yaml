@@ -1,0 +1,34 @@
+rules:
+  - id: CONTENT-001
+    title: "主文 Markdown 文件"
+    severity: minor
+    domain: docs
+    applies_to: ["content"]
+    check: glob_count
+    params:
+      pattern: "*.md"
+      min: 1
+    description: "内容仓库应至少有 1 个 Markdown 主文文件"
+
+  - id: CONTENT-002
+    title: "review 笔记分离结构"
+    severity: info
+    domain: docs
+    applies_to: ["content"]
+    check: file_exists
+    params:
+      paths: ["review.md", "revision-notes.md"]
+      anyOf: true
+    description: "内容仓库建议有 review.md 或 revision-notes.md（正文与评审分离）"
+    note: "推荐项，非硬性"
+
+  - id: CONTENT-003
+    title: "README 包含导航"
+    severity: minor
+    domain: docs
+    applies_to: ["content"]
+    check: file_contains
+    params:
+      path: "README.md"
+      patterns: ["# ", "## "]
+    description: "内容仓库 README 应包含标题结构"

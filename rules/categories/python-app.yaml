@@ -1,0 +1,60 @@
+rules:
+  - id: PY-001
+    title: "pyproject.toml 含 project.name"
+    severity: critical
+    domain: python
+    applies_to: ["python-app"]
+    check: toml_field
+    params:
+      path: "pyproject.toml"
+      field: "project.name"
+    description: "Python 项目应有符合 PEP 621 的 pyproject.toml 且含 project.name"
+    template_ref: "templates/categories/python-app/pyproject.toml"
+
+  - id: PY-002
+    title: "tests/ 目录存在"
+    severity: major
+    domain: python
+    applies_to: ["python-app"]
+    check: directory_exists
+    params:
+      path: "tests"
+    description: "Python 项目应有 tests/ 目录"
+
+  - id: PY-003
+    title: "pytest 配置存在"
+    severity: major
+    domain: python
+    applies_to: ["python-app"]
+    check: toml_field
+    params:
+      path: "pyproject.toml"
+      field: "tool.pytest.ini_options"
+      expect_table: true
+    description: "Python 项目应有 pytest 配置（[tool.pytest.ini_options] 表存在）"
+    note: "pytest.ini 或 setup.cfg 中也接受"
+
+  - id: PY-004
+    title: "PyPI publish workflow"
+    severity: major
+    domain: python
+    applies_to: ["python-app"]
+    check: file_exists
+    params:
+      paths: [".github/workflows/publish.yml"]
+      skip_if_no_file: ".github/workflows/publish.yml"
+    description: "已发布 PyPI 的 Python 项目应有 publish workflow（未发布仓豁免）"
+    template_ref: "templates/categories/python-app/.github/workflows/publish.yml"
+    note: "未发布仓库可豁免"
+
+  - id: PY-005
+    title: "ruff 依赖声明"
+    severity: minor
+    domain: python
+    applies_to: ["python-app"]
+    check: toml_field
+    params:
+      path: "pyproject.toml"
+      field: "dependency-groups.test"
+    description: "pyproject.toml 应有 test dependency-group（ruff + pytest）"
+    note: "dev-dependencies 形式也接受"

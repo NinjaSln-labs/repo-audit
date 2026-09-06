@@ -1,0 +1,67 @@
+rules:
+  - id: GO-001
+    title: "go.mod 存在且含 module 声明"
+    severity: critical
+    domain: go
+    applies_to: ["go-service"]
+    check: file_exists
+    params:
+      paths: ["go.mod"]
+    description: "Go 服务应有 go.mod"
+
+  - id: GO-002
+    title: "cmd/ 目录结构"
+    severity: major
+    domain: go
+    applies_to: ["go-service"]
+    check: directory_exists
+    params:
+      path: "cmd"
+    description: "Go 服务应有 cmd/ 目录（含服务入口 main.go）"
+
+  - id: GO-003
+    title: "Makefile 含 build/test"
+    severity: major
+    domain: go
+    applies_to: ["go-service"]
+    check: file_contains
+    params:
+      path: "Makefile"
+      patterns: ["build:", "test:"]
+      anyOf: false
+    description: "Go 服务 Makefile 应有 build 和 test target（lint 为推荐项，见 GO-003b）"
+    template_ref: "templates/categories/go-service/Makefile"
+
+  - id: GO-003b
+    title: "Makefile 含 lint target"
+    severity: minor
+    domain: go
+    applies_to: ["go-service"]
+    check: file_contains
+    params:
+      path: "Makefile"
+      patterns: ["lint:"]
+    description: "Go 服务 Makefile 建议含 lint target（go vet / gofmt）"
+    note: "个人/单作者项目豁免"
+
+  - id: GO-004
+    title: "CI workflow（go test/go vet）"
+    severity: minor
+    domain: go
+    applies_to: ["go-service"]
+    check: file_exists
+    params:
+      paths: [".github/workflows/ci.yml"]
+    description: "Go 服务建议有 CI workflow（与 QUA-002 重复检查，降级为 minor）"
+    template_ref: "templates/categories/go-service/.github/workflows/ci.yml"
+    note: "个人/单作者项目豁免；多人协作项目建议配置"
+
+  - id: GO-005
+    title: "release workflow"
+    severity: minor
+    domain: go
+    applies_to: ["go-service"]
+    check: file_exists
+    params:
+      paths: [".github/workflows/release.yml"]
+    description: "Go 服务建议有 release workflow（goreleaser）"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 问题咨询
+    url: https://github.com/<org>/<repo>/discussions
+    about: 使用讨论区提问，不要用 issue 提问
+  - name: 安全漏洞（私密报告）
+    url: https://github.com/<org>/<repo>/security/advisories/new
+    about: 请通过私密漏洞报告提交，不要公开披露

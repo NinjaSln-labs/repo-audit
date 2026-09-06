@@ -1,0 +1,75 @@
+rules:
+  - id: OSS-001
+    title: "CHANGELOG.md 存在"
+    severity: critical
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: ["CHANGELOG.md"]
+    description: "产品 OSS 仓库必须有 CHANGELOG.md（Keep a Changelog 格式，overlay 标准）"
+    template_ref: "templates/categories/product-oss/CHANGELOG.md"
+
+  - id: OSS-002
+    title: "CODEOWNERS 存在"
+    severity: major
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: [".github/CODEOWNERS"]
+    description: "多人协作仓库应有 CODEOWNERS 定义评审责任人"
+    template_ref: "templates/categories/product-oss/.github/CODEOWNERS"
+
+  - id: OSS-003
+    title: "dependabot 配置"
+    severity: major
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: [".github/dependabot.yml"]
+    description: "产品 OSS 仓库应有 dependabot 自动升级配置"
+    template_ref: "templates/categories/product-oss/.github/dependabot.yml"
+
+  - id: OSS-004
+    title: "issue forms 配置"
+    severity: minor
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: [".github/ISSUE_TEMPLATE/bug_report.yml"]
+    description: "产品 OSS 仓库建议配置 issue forms"
+
+  - id: OSS-005
+    title: "PR template 存在"
+    severity: minor
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: [".github/PULL_REQUEST_TEMPLATE.md"]
+    description: "产品 OSS 仓库应有 PR template"
+    template_ref: "templates/categories/product-oss/PULL_REQUEST_TEMPLATE.md"
+
+  - id: OSS-006
+    title: "release-please 配置"
+    severity: major
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: ["release-please-config.json"]
+    description: "产品 OSS 仓库应有 release-please 自动化发版配置"
+    template_ref: "templates/categories/product-oss/release-please-config.json"
+
+  - id: OSS-007
+    title: "SUPPORT.md 存在"
+    severity: minor
+    domain: oss
+    applies_to: ["product-oss"]
+    check: file_exists
+    params:
+      paths: ["SUPPORT.md"]
+    description: "产品 OSS 仓库应有 SUPPORT.md（协作流/发布节奏说明）"

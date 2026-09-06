@@ -1,0 +1,10 @@
+{
+  "release-type": "node",
+  "packages": {
+    ".": {}
+  },
+  "include-component-in-tag": false,
+  "bump-minor-pre-major": true,
+  "separate-pull-requests": false,
+  "group-pull-request-title-pattern": "chore(main): release ${version}"
+}

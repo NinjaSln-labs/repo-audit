@@ -1,0 +1,48 @@
+rules:
+  - id: SEC-001
+    title: "无硬编码密钥/凭证"
+    severity: critical
+    domain: security
+    applies_to: ["archive"]
+    check: grep
+    params:
+      patterns:
+        - "(?i)(password|secret|api.?key|token|credential)\\s*[=:]\s*['\"]?[^\\s'\"]{8,}"
+      exclude:
+        - ".git/"
+        - "node_modules/"
+        - ".scaffold/"
+        - "audit-report/"
+        - "templates/"
+        - "CHANGELOG.md"
+        - "HANDOFF.md"
+        - "HANDOFF-ARCHIVE/"
+        - ".agents/"
+      max_match: 0
+    description: "归档仓仍不应含硬编码密钥（安全底线，不因归档豁免）"
+    note: "归档仓仅保留安全/脱敏检查，其余工程规范不适用"
+
+  - id: SEC-003
+    title: "无本机绝对路径泄漏"
+    severity: minor
+    domain: security
+    applies_to: ["archive"]
+    check: grep
+    params:
+      patterns:
+        - "/home/[a-z]"
+        - "/Users/[a-z]"
+        - "/mnt/[a-z]"
+      exclude:
+        - ".git/"
+        - "node_modules/"
+        - ".scaffold/"
+        - "audit-report/"
+        - "templates/"
+        - "CHANGELOG.md"
+        - "HANDOFF.md"
+        - "HANDOFF-ARCHIVE/"
+        - ".agents/"
+      max_match: 0
+    description: "归档仓不应含本机绝对路径（脱敏底线）"
+    note: "severity=minor：描述性路径文本容忍"

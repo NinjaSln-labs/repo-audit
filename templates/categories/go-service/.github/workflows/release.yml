@@ -1,0 +1,58 @@
+# Go Release 工作流（GoReleaser v2）
+#
+# 触发 = v* tag（semver）；GoReleaser 负责：跨平台矩阵构建 → 归档 → checksum →
+# 分组 changelog → GitHub Release 上传。
+# permissions：contents: write 必需（建 Release/传产物）；启用 cosign keyless 时加
+# id-token: write；推 GHCR 镜像时加 packages: write。
+# 验证链前置：ci.yml（make verify）应在 main/PR 上已把住质量关——发布 job 只做构建上传。
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  # id-token: write    # 启用 cosign keyless 签名时解开
+  # packages: write    # 推 GHCR 镜像时解开
+
+concurrency:
+  group: go-release
+  cancel-in-progress: false
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@<commit-SHA> # actions/checkout@v7
+        with:
+          fetch-depth: 0          # GoReleaser changelog 需要全量历史
+      - name: Setup Go
+        uses: actions/setup-go@<commit-SHA> # actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: true
+      # —— 可选：供应链加固工具（GoReleaser 不会自动安装）——
+      # - name: Install cosign        # 启用 .goreleaser.yaml signs 段时解开
+      #   uses: sigstore/cosign-installer@<commit-SHA> # cosign-installer@v4
+      # - name: Install syft          # 启用 sboms 段时解开
+      #   uses: anchore/sbom-action/download-syft@<commit-SHA> # v0.24
+      # —— 可选：容器镜像（GoReleaser dockers_v2；与 .goreleaser.yaml dockers_v2 段配套）——
+      # - name: Set up Docker Buildx
+      #   uses: docker/setup-buildx-action@<commit-SHA> # v4
+      # - name: Login to GHCR
+      #   uses: docker/login-action@<commit-SHA> # v4
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@<commit-SHA> # goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

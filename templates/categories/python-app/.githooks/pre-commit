@@ -1,0 +1,13 @@
+#!/bin/sh
+# 验证链前门（Python 版）：提交时强制 ruff + pytest（scripts/verify.py 单源）。
+# 启用方式：git config core.hooksPath .githooks
+# 依赖：本地 venv 已激活或 python 环境含 ruff/pytest（未就绪时 --no-verify 并注明）。
+
+echo "pre-commit：执行验证链 python3 scripts/verify.py ..."
+python3 scripts/verify.py
+code=$?
+if [ $code -ne 0 ]; then
+  echo ""
+  echo "✗ 验证链 FAIL：修复后重试；确属中间态请 commit --no-verify 并在说明注明。"
+  exit 1
+fi

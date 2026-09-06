@@ -1,0 +1,31 @@
+# Go CI（push/PR 验证）
+#
+# 验证链单源：Makefile verify（gofmt → vet → test → build）——本地与 CI 同一入口。
+# Go 构建自含依赖校验（go.sum），无需额外 lockfile 处理。
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@<commit-SHA> # actions/checkout@v7.0.1
+      - name: Setup Go
+        uses: actions/setup-go@<commit-SHA> # actions/setup-go@v6
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Verify
+        run: make verify

@@ -1,0 +1,79 @@
+rules:
+  - id: DSH-001
+    title: "package.json 含 dsh 字段"
+    severity: critical
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: json_field
+    params:
+      path: "package.json"
+      field: "dsh"
+    description: "dsh 插件应在 package.json 中包含 dsh 字段（bundle.patch/client.inject/platform）"
+    template_ref: "templates/repo-root/package.json"
+
+  - id: DSH-002
+    title: "@deepseek-ai/dsh-session 依赖声明"
+    severity: major
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: json_field
+    params:
+      path: "package.json"
+      field: "peerDependencies.@deepseek-ai/dsh-session"
+      fallback_field: "devDependencies.@deepseek-ai/dsh-session"
+    description: "dsh 插件应声明 @deepseek-ai/dsh-session 依赖（peerDependencies 或 devDependencies 均可）"
+
+  - id: DSH-003
+    title: "src/ 目录存在"
+    severity: major
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: directory_exists
+    params:
+      path: "src"
+    description: "dsh 插件应有 src/ 目录（host TypeScript + client bundle 结构）"
+
+  - id: DSH-004
+    title: "publish workflow 存在"
+    severity: major
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: file_exists
+    params:
+      paths: [".github/workflows/publish.yml"]
+    description: "dsh 插件应有 publish workflow"
+    template_ref: "templates/repo-root/.github/workflows/publish.yml"
+
+  - id: DSH-005
+    title: "verify.mjs 存在"
+    severity: major
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: file_exists
+    params:
+      paths: ["verify.mjs", "scripts/verify.mjs"]
+      anyOf: true
+    template_ref: "templates/repo-root/scripts/verify.mjs"
+
+  - id: DSH-006
+    title: "build.mjs 存在"
+    severity: major
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: file_exists
+    params:
+      paths: ["scripts/build.mjs"]
+    description: "build 链需有 build.mjs 探测包装"
+    template_ref: "templates/repo-root/scripts/build.mjs"
+
+  - id: DSH-007
+    title: "CONTRIBUTING.md 含 pre-commit 纪律"
+    severity: minor
+    domain: dsh
+    applies_to: ["dsh-plugin"]
+    check: file_contains
+    params:
+      path: "CONTRIBUTING.md"
+      patterns: ["pre-commit", "verify"]
+    description: "dsh 插件 CONTRIBUTING.md 应提及 pre-commit 验证链"
+    template_ref: "templates/common/CONTRIBUTING-core.md"

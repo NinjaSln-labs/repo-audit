@@ -1,0 +1,52 @@
+rules:
+  - id: GIT-001
+    title: "Conventional Commits 规范"
+    severity: major
+    domain: git
+    applies_to: ["*"]
+    check: regex
+    params:
+      command: "git log --format=%s -20"
+      pattern: "^(feat|fix|docs|refactor|test|chore|style|perf|build|ci|revert)(\\(.+\\))?: .+"
+    description: "最近 20 条提交应符合 Conventional Commits 规范（AGENTS-core 提交规范节）"
+    fix_hint: "使用 standard-version 或手动 reword；参考 templates/common/AGENTS-core.md"
+
+  - id: GIT-002
+    title: ".gitignore 含机密防护段"
+    severity: major
+    domain: git
+    applies_to: ["dsh-plugin", "javascript", "npm-package"]
+    check: file_contains
+    params:
+      path: ".gitignore"
+      patterns: ["node_modules/", "*.log"]
+    description: ".gitignore 应排除构建产物和日志（gitignore-core 通用段）"
+    template_ref: "templates/common/gitignore-core.md"
+    note: "仅对 JS/TS 类仓库适用；Python/Go 等分类豁免"
+
+  - id: GIT-003
+    title: "至少有一个有效提交"
+    severity: major
+    domain: git
+    applies_to: ["*"]
+    check: command_result
+    params:
+      command: "git rev-list --count HEAD"
+      min: 1
+      skip_if_zero: true
+    description: "仓库必须有至少一个提交（零提交仓自动豁免）"
+    fix_hint: "git add -A && git commit -m 'chore: initial commit'"
+    note: "scaffold 生成后未初始化提交时豁免"
+
+  - id: GIT-004
+    title: ".scaffold/lock 存在"
+    severity: info
+    domain: git
+    applies_to: ["*"]
+    check: file_exists
+    params:
+      paths: [".scaffold/lock/manifest.json"]
+      anyOf: false
+      skip_if_no_parent: ".scaffold"
+    description: "经 scaffold --update 的仓库应有 .scaffold/lock/manifest.json（非 scaffold 管理仓自然 pass）"
+    note: "仅对 adopt/update 过的仓库有意义；从未接管的仓视为 pass"

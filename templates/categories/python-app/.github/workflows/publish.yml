@@ -1,0 +1,112 @@
+# Python 发布工作流（PyPI Trusted Publishing）
+#
+# 信任链：tag v* → build job（版本守卫 + python -m build + twine check）→
+#   PyPI publish job（OIDC Trusted Publishing，自动 PEP 740 attestations）
+# 要点（2026-09 官方文档核实）：
+# - 构建必须在独立 build job——PyPA guide 原话 "Building distributions in a publishing
+#   job is unsupported"；publish job 只做"下载 artifact + 上传"
+# - permissions 工作流级清零，id-token: write 只放 publish job（最小化）
+# - TestPyPI 走 workflow_dispatch 手动触发（验证发布链路用；TestPyPI 独立账号+独立配置）
+# - 不加 skip-existing：PyPI 禁文件名复用，且 release 14 天后冻结——失败换新版本号重发
+# - attestations 默认开启，无需额外签名步骤
+name: publish
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch: {}   # 手动触发时只发 TestPyPI（验证链路）
+
+permissions: {}
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 构建发行包（sdist + wheel）
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@<commit-SHA> # actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup Python
+        uses: actions/setup-python@<commit-SHA> # actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: 版本一致性守卫（tag ↔ pyproject.toml 静态版本）
+        run: |
+          python - <<'PY'
+          import os, re, sys, tomllib
+          tag = os.environ["GITHUB_REF_NAME"]
+          m = re.fullmatch(r"v(\d+(?:\.\d+)+(?:[.-]?[a-zA-Z0-9.]+)?)", tag)
+          if not m:
+              sys.exit(f"::error::tag '{tag}' 不符合 vX.Y.Z 约定")
+          expected = m.group(1)
+          with open("pyproject.toml", "rb") as f:
+              data = tomllib.load(f)
+          actual = data.get("project", {}).get("version")
+          if actual is None:
+              sys.exit("::error::pyproject.toml 无静态 version；动态版本请改用『构建后比对 dist 文件名』守卫（见下注释）")
+          if actual != expected:
+              sys.exit(f"::error::版本不一致：tag {tag} vs pyproject.toml {actual}")
+          print(f"版本一致：{actual}")
+          PY
+        # ▸ 动态版本（dynamic = ["version"]）替代：移到 python -m build 之后，比对产物文件名：
+        #   glob "dist/*-{GITHUB_REF_NAME[1:]}.tar.gz" 不存在即失败（最通用，绕开版本来源差异）
+      - name: 构建 sdist + wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+      - name: twine check（pypa action 上传前也会校验；此处尽早失败）
+        run: |
+          python -m pip install twine
+          python -m twine check dist/*
+      - name: 上传构建产物
+        uses: actions/upload-artifact@<commit-SHA> # actions/upload-artifact@v5
+        with:
+          name: python-package-distributions
+          path: dist/
+
+  publish-testpypi:
+    name: 发布到 TestPyPI（仅手动触发）
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/<name>
+    permissions:
+      id-token: write          # Trusted Publishing 必需
+    steps:
+      - name: 下载构建产物
+        uses: actions/download-artifact@<commit-SHA> # actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: 发布到 TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1   # 2026-07 当前 v1.14.2；可 pin 到 tag/SHA
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: 发布到 PyPI（tag 触发；environment 需配 required reviewers）
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi               # GitHub Settings → Environments：required reviewers 必开
+      url: https://pypi.org/p/<name>
+    permissions:
+      id-token: write          # Trusted Publishing；attestations 默认生成
+    steps:
+      - name: 下载构建产物
+        uses: actions/download-artifact@<commit-SHA> # actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: 发布到 PyPI（自动 PEP 740 attestations）
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,18 @@
+# PR 依赖安全审查：新增依赖引入已知漏洞时拦下（fail-on-severity 从 high 起步，避免误伤阻塞）
+name: dependency-review
+
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@<commit-SHA> # actions/checkout@v7
+      - name: Dependency Review
+        uses: actions/dependency-review-action@<commit-SHA> # dependency-review-action@v5
+        with:
+          fail-on-severity: high

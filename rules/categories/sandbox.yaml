@@ -1,0 +1,33 @@
+rules:
+  - id: SANDBOX-001
+    title: "最小集：README+AGENTS"
+    severity: minor
+    domain: docs
+    applies_to: ["sandbox"]
+    check: file_exists
+    params:
+      paths: ["README.md", "AGENTS.md"]
+    description: "沙盒仓库至少应有 README.md 和 AGENTS.md（最小集设计）"
+    template_ref: "templates/categories/sandbox/"
+
+  - id: SANDBOX-002
+    title: "无 CI workflow"
+    severity: info
+    domain: quality
+    applies_to: ["sandbox"]
+    check: not_exists
+    params:
+      paths: [".github/workflows/"]
+    description: "沙盒仓库不应有 CI workflow（生命周期短，无发布面）"
+    note: "符合为 pass；如有属用户自选，不视为问题"
+
+  - id: SANDBOX-003
+    title: "无 publish workflow"
+    severity: info
+    domain: quality
+    applies_to: ["sandbox"]
+    check: not_exists
+    params:
+      paths: [".github/workflows/publish.yml"]
+    description: "沙盒仓库不应有 publish workflow"
+    note: "符合为 pass"

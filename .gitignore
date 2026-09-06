@@ -1,0 +1,19 @@
+# 依赖
+node_modules/
+
+# 审计输出
+audit-report/
+.audit/
+
+# 系统
+.DS_Store
+*.log
+
+# 编辑器
+.vscode/
+.idea/
+
+# 本地私有
+.env
+.env.*
+!.env.example

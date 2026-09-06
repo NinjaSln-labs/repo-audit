@@ -1,0 +1,69 @@
+rules:
+  - id: QUA-001
+    title: "验证链存在"
+    severity: major
+    domain: quality
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths:
+        - "verify.mjs"
+        - "scripts/verify.mjs"
+        - "scripts/verify.py"
+        - "Makefile"
+      anyOf: true
+      fallback_paths: ["package.json"]
+      fallback_field: "scripts.test"
+    description: "工程仓库应有验证链（verify.mjs / Makefile / npm scripts.test 任一形态）"
+    template_ref: "templates/repo-root/scripts/verify.mjs"
+
+  - id: QUA-002
+    title: "CI workflow 存在"
+    severity: major
+    domain: quality
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: regex
+    params:
+      command: "ls .github/workflows/ 2>/dev/null | grep -cE '\\.(yml|yaml)$'"
+      patterns: ["[1-9]"]
+    description: "工程仓库应有 CI workflow（任意 .github/workflows/*.yml|yaml，命名不绑定 ci.yml）"
+    note: "glob_count 无法遍历隐藏目录（E4），改用 regex+command 方案"
+
+  - id: QUA-003
+    title: "pre-commit 钩子配置"
+    severity: minor
+    domain: quality
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths: [".githooks/pre-commit", ".husky/pre-commit", "lefthook.yml"]
+    description: "工程仓库应有 pre-commit 钩子（AGENTS-core 部署纪律）"
+    template_ref: "templates/repo-root/.githooks/pre-commit"
+    note: "sandbox/content 豁免"
+
+  - id: QUA-004
+    title: "锁文件入库"
+    severity: major
+    domain: quality
+    applies_to: ["dsh-plugin", "python-app", "go-service", "javascript", "npm-package"]
+    check: file_exists
+    params:
+      paths:
+        - "package-lock.json"
+        - "poetry.lock"
+        - "go.sum"
+        - "requirements.lock"
+      anyOf: true
+    description: "锁文件应入库以确保可复现构建（BEST-PRACTICES §5.4 验证链）"
+    note: "无包管理的仓库豁免"
+
+  - id: QUA-005
+    title: "CLAUDE.md 桥接"
+    severity: info
+    domain: quality
+    applies_to: ["*"]
+    check: file_exists
+    params:
+      paths: ["CLAUDE.md"]
+    description: "仓库有 CLAUDE.md 则 Claude Code 用户可直接读取 AGENTS.md"
+    note: "推荐项，非硬性要求"
