@@ -321,6 +321,14 @@ fi
 
 如果自定义规则文件不存在或格式错误，工具会输出警告并继续（只加载成功的规则）。
 
+### 5.5 Windows 调用形态（v1.3.2 起）
+
+v1.3.2 修复了 v1.3.1 在 Windows 上 CLI 全形态静默不执行的回归（Issue#4）。Agent 在 Windows 上的注意事项：
+
+- 入口守卫已跨平台归一化（`pathToFileURL`），`node repo-audit.mjs` / npm bin / shim 全形态可用
+- `command`/`command_result` 检查（GIT-001/GIT-003/QUA-002）自动探测 Git for Windows bash；未装 Git for Windows 时这些项降级 fail，其余规则正常
+- 守卫不命中时 stderr 有 `ℹ 未作为 CLI 入口执行` 诊断提示——若审计"成功"但 0 规则输出，先查 stderr 这一行
+
 ---
 
 ## 六、性能参考
@@ -546,4 +554,4 @@ GitHub Issues                    修复 / 文档 / 不采纳
 3. `minor` — 功能部分受损（1 周内响应）
 4. `info` — 建议改进（排期处理）
 
-*Agent 操作手册 v1.3 · 2026-09-06（新增反馈通道 §10）
+*Agent 操作手册 v1.3.2 · 2026-09-07（§5.5 Windows 调用形态；v1.3.2 修复 Windows 入口回归 Issue#4）*

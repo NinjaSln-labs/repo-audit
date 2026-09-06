@@ -500,6 +500,20 @@ node repo-audit.mjs --repo ./my-repo --type python-app
 
 或通过 `REPO_AUDIT_TYPES` 环境变量添加自定义分类。
 
+### Windows 上 CLI 无输出（v1.3.1 已修，v1.3.2 起）
+
+v1.3.1 的入口守卫在 Windows 上存在回归：CLI 全形态静默不执行（exit 0 无输出）。v1.3.2 改用 `pathToFileURL` 归一化后修复。升级：
+
+```bash
+npm install -g repo-audit-tool@latest
+```
+
+若仍见 `ℹ 未作为 CLI 入口执行` 提示（stderr），说明调用形态未被守卫识别——请附带该提示行（含两侧 URL/路径形态）提交反馈。
+
+### Windows 无 POSIX shell（command 检查器降级）
+
+`command`/`command_result` 类检查（GIT-001/GIT-003/QUA-002）需 POSIX shell。Windows 上引擎自动探测 Git for Windows 自带的 bash（PATH 中的 `sh` → `Program Files\\Git\\bin\\bash.exe` 等常见位置）。未装 Git for Windows 时这些检查项降级为 fail 并给出提示，不影响其余规则。
+
 ---
 
 ## 十、与 scaffold 的配合
@@ -778,5 +792,14 @@ gh issue view <NUMBER> --repo NinjaSln-labs/repo-audit
 # 反馈已处理
 gh issue close <NUMBER> --repo NinjaSln-labs/repo-audit --comment "已处理，感谢反馈"
 ```
+
+### 12.9 Windows 支持（v1.3.2）
+
+v1.3.2 起完整支持 Windows：
+
+- **入口守卫跨平台**：`pathToFileURL` 归一化替代 `file://` 手工拼接，win32 上 CLI 正常执行（v1.3.1 回归修复，见 [Issue #4](https://github.com/NinjaSln-labs/repo-audit/issues/4)）
+- **守卫诊断提示**：调用形态未被识别时 stderr 输出 `ℹ 未作为 CLI 入口执行` 一行提示（不再静默 exit 0）
+- **command 检查器跨平台**：自动探测 Git for Windows bash（PATH `sh` → `Git\bin\bash.exe`），未装时相关检查降级提示
+- **CI 双平台矩阵**：master push/PR 在 ubuntu-latest + windows-latest 上同时跑验证链与 npm 安装 smoke
 
 

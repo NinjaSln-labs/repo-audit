@@ -4,6 +4,8 @@
 # - 本 workflow：push 到 master / PR 时跑验证链
 # - 验证链与发布完全同源：verify.mjs 单源入口
 # - 无发布语义：不需要 id-token，权限只要 contents: read
+# - Issue#4 教训：矩阵含 windows-latest——入口守卫/路径类代码的 win32 形态
+#   本地 Linux 与 ubuntu runner 全都测不到，必须真 win32 实跑
 name: ci
 
 on:
@@ -20,7 +22,11 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,3 +40,18 @@ jobs:
         run: node verify.mjs
       - name: Test
         run: node --test
+      # P-006 + Issue#4 双教训：入口/路径类改动必须过「npm pack → 干净安装 → bin 实测」链。
+      # 本地直跑与 CI checkout 形态都测不到安装形态；win32 形态只有 windows runner 能测到。
+      - name: Install smoke (npm pack → clean install → bin run)
+        shell: bash
+        run: |
+          set -e
+          npm pack
+          SMOKE="$(pwd)/smoke-install"
+          mkdir -p "$SMOKE"
+          cd "$SMOKE"
+          npm init -y >/dev/null 2>&1
+          npm install --no-save "$(dirname "$SMOKE")"/repo-audit-tool-*.tgz
+          # 审计目标用 CI checkout 的本仓（git 仓，exit 3 防御）
+          npx repo-audit --repo "$(dirname "$SMOKE")" --format json > report.json
+          node -e "const r=require(process.cwd()+'/report.json'); if(!Array.isArray(r.findings)||r.findings.length===0){console.error('SMOKE FAIL: findings empty or missing'); process.exit(1)} console.log('SMOKE OK:', r.findings.length, 'findings, audit_type='+r.audit_type)"

@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync, mkdirSync, statSy
 import { join, resolve, dirname, relative } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { platform } from 'node:os'
 
 const ROOT = dirname(fileURLToPath(import.meta.url))
@@ -332,8 +332,43 @@ function countMdFiles(path) {
 }
 
 // ============================================================
-// Git 工具（跨平台）
+// Shell 工具（跨平台）
 // ============================================================
+
+// Windows 无原生 sh；command 检查器需 POSIX shell 语义。
+// 优先 Git for Windows 自带的 bash（npm/CI/开发者机几乎必装），探测顺序：
+//   1. sh 在 PATH（posix 或 Git Bash 已入 PATH）
+//   2. 常见安装位置的 bash.exe（Git for Windows / scoop / winget）
+//   3. 兜底 null（调用方降级为「检查器不可用」而非崩溃）
+let winShellCache
+function findShell() {
+  if (process.platform !== 'win32') return { cmd: 'sh', args: ['-c'] }
+  if (winShellCache !== undefined) return winShellCache
+  const probe = (exe) => spawnSync(exe, ['-c', 'echo ok'], { encoding: 'utf-8' }).status === 0
+  // 1) PATH 中的 sh（可能已是 Git Bash 的 sh.exe）
+  const pathSh = spawnSync('where', ['sh'], { encoding: 'utf-8' })
+  const candidates = []
+  if (pathSh.status === 0) candidates.push(pathSh.stdout.trim().split('\n')[0].trim())
+  // 2) 常见安装位置
+  const common = [
+    process.env.ProgramFiles && `${process.env.ProgramFiles}\\Git\\bin\\bash.exe`,
+    process.env['ProgramFiles(x86)'] && `${process.env['ProgramFiles(x86)']}\\Git\\bin\\bash.exe`,
+    process.env.LOCALAPPDATA && `${process.env.LOCALAPPDATA}\\Programs\\Git\\bin\\bash.exe`,
+  ].filter(Boolean)
+  for (const p of common) { try { if (existsSync(p)) candidates.push(p) } catch {} }
+  for (const c of candidates) {
+    if (probe(c)) { winShellCache = { cmd: c, args: ['-c'] }; return winShellCache }
+  }
+  winShellCache = null
+  return null
+}
+
+// command 检查器统一入口：跨平台执行 shell 命令
+function runShellCommand(command, cwd) {
+  const shell = findShell()
+  if (!shell) return { status: -1, stdout: '', stderr: 'no POSIX shell found on win32 (Git Bash 未安装?)', error: { code: 'ENOENT' } }
+  return spawnSync(shell.cmd, [...shell.args, command], { cwd, encoding: 'utf-8' })
+}
 
 function git(args, cwd) {
   const r = spawnSync('git', args, { cwd, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })
@@ -847,7 +882,7 @@ function runCheck(rule, repoPath, mpj = null) {
 
     case 'regex': {
       if (params?.command) {
-        const r = spawnSync('sh', ['-c', params.command], { cwd: repoPath, encoding: 'utf-8' })
+        const r = runShellCommand(params.command, repoPath)
         if (r.status !== 0) { passed = false; evidence = `命令失败: ${r.stderr?.trim() || 'exit ' + r.status}`; break }
         const re = new RegExp(params.pattern)
         const lines = r.stdout.split('\n').filter(Boolean)
@@ -912,7 +947,7 @@ function runCheck(rule, repoPath, mpj = null) {
     }
 
     case 'command_result': {
-      const r = spawnSync('sh', ['-c', params?.command], { cwd: repoPath, encoding: 'utf-8' })
+      const r = runShellCommand(params?.command, repoPath)
       if (r.status !== 0) { passed = false; evidence = `命令失败 (exit ${r.status})`; break }
       const val = parseInt(r.stdout.trim())
       // P3: skip_if_zero — 命令结果为 0 时豁免（如零提交仓、空文件等）
@@ -1652,11 +1687,24 @@ ${message}
 }
 
 // Issue#1 fix: 入口守卫——仅直接作为 CLI 运行时执行主流程；被 import（测试/编程复用）不跑。
-// argv[1] 经 realpath 归一化（npm bin 是 symlink，直接比对 import.meta.url 会误判）
-const isDirectRun = import.meta.url === `file://${realpathSync(process.argv[1] || '')}`
-if (isDirectRun) {
+// Issue#4 fix: pathToFileURL 归一化（跨平台语义正确）——`file://` 手工拼接在 Windows 上产生
+//   非法 URL 形态（file://C:\... 反斜杠），与 import.meta.url（file:///C:/...）永不相等，
+//   导致 v1.3.1 在 Windows 全形态静默不执行（exit 0 无输出）。
+//   pathToFileURL 在 win32 产出 file:///C:/...（正斜杠三斜杠），posix 行为与手工拼接一致。
+// argv[1] 仍经 realpathSync 归一化（npm bin symlink，P-006）。
+export function isCliEntry(metaUrl, argv1) {
+  if (!argv1) return false
+  let real
+  try { real = realpathSync(argv1) } catch { return false }
+  return metaUrl === pathToFileURL(real).href
+}
+const entryArg = process.argv[1]
+if (isCliEntry(import.meta.url, entryArg)) {
   main().catch(err => {
     console.error(`✗ 运行时错误: ${err.message}`)
     process.exit(2)
   })
+} else if (entryArg && !process.env.NODE_TEST_CONTEXT) {
+  // 守卫不命中且非测试形态：提示而非静默——exit 0 无输出会让入口回归极难发现（Issue#4 教训）
+  console.error(`ℹ 未作为 CLI 入口执行（import.meta.url=${import.meta.url}, argv[1]=${entryArg}）。若您直接运行了本文件，请通过 node <本文件> 或安装后的 bin 调用。`)
 }
