@@ -507,9 +507,12 @@ node repo-audit.mjs --repo ./my-repo --type python-app
 | 操作 | 命令序列 |
 |---|---|
 | 新建仓库后验证 | `scaffold.mjs --type xxx --name yyy` → `repo-audit.mjs --repo ./yyy` |
+| **存量仓补齐缺失文档** | `scaffold.mjs --update ./zzz --type xxx --dry-run`（预览）→ `scaffold.mjs --update ./zzz`（执行；adopt 模式零覆盖）→ `repo-audit.mjs --repo ./zzz` 复审 |
 | 模板升级后对比 | `repo-audit.mjs --repo ./zzz --output ./before` → `scaffold.mjs --update ./zzz` → `repo-audit.mjs --repo ./zzz --output ./after` |
 | CI 门禁 | `repo-audit.mjs --repo . --strict --format json` |
 | PR 描述附件 | `repo-audit.mjs --repo . --format md --output ./pr-audit` → 附 `pr-audit/report.md` 到 PR |
+
+> **补 AGENTS.md 提示**（DOC-004 fail 时）：优先 `scaffold --update` 补齐（模板头部自带来源声明二选一）；确需手写时，无 `.scaffold/lock/` 的仓按「自主维护」措辞写头部，勿照抄「单源拼装」行。
 
 ---
 

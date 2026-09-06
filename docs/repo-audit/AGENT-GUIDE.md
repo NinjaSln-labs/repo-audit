@@ -191,7 +191,29 @@ cat audit-report/report.json | jq '.findings[] | select(.status=="fail") | .id'
 # 5. 如有 Critical 发现，阻断生成流程
 ```
 
-### 4.2 模板升级后校验
+### 4.2 存量仓库补齐缺失文档（Issue#3 动线）
+
+审计 fail 后需要补 AGENTS.md / CONTRIBUTING.md 等模板文档时，**优先用 `scaffold --update` 而不是手写**：
+
+```bash
+# 1. 存量仓首次接入（无 .scaffold/lock/）——adopt 模式，零覆盖保证
+node scaffold.mjs --update <repo> --type <type> --dry-run   # 先看会落位什么
+node scaffold.mjs --update <repo> --type <type>            # 实际执行
+
+# 2. 行为：
+#    - 仓库缺失的文件（如 AGENTS.md）→ ADDED 直拷
+#    - 仓库已有且与模板不同 → .scaffold-merge/ 人工评审区（不覆盖你的内容）
+#    - 工作区必须 clean（先 commit/stash）
+# 3. 补齐后重跑审计确认
+node repo-audit.mjs --repo <repo> --format json
+```
+
+要点：
+- `--update` 对**从未被 scaffold 管理的仓**同样可用（自动 adopt，建立 `.scaffold/lock/`）
+- 手写 AGENTS.md 时，**按来源声明二选一**：无 lock 的仓删除「单源拼装」行、保留「自主维护」行（模板头部已内置两种措辞）
+- `--skip <path>` 可排除不想让模板接管的文件（可多次）
+
+### 4.3 模板升级后校验
 
 ```bash
 # 1. 审计当前状态
@@ -209,7 +231,7 @@ after=$(cat ./audit-after/report.json | jq '.summary')
 # 如果 after.critical > before.critical → 告警：模板升级引入了问题
 ```
 
-### 4.3 CI 门禁集成
+### 4.4 CI 门禁集成
 
 ```yaml
 # GitHub Actions 示例
@@ -219,7 +241,7 @@ after=$(cat ./audit-after/report.json | jq '.summary')
     echo "Score: $(jq '.summary | 100 - (.critical * 25) - (.major * 10) - (.minor * 3)' ./.ci-audit/report.json)"
 ```
 
-### 4.4 增量维度审计
+### 4.5 增量维度审计
 
 ```bash
 # 只审计安全（快速）
@@ -232,7 +254,7 @@ node repo-audit.mjs --dim docs --format json
 node repo-audit.mjs --dim git --dim docs --dim security --dim quality --format json
 ```
 
-### 4.5 自定义规则叠加
+### 4.6 自定义规则叠加
 
 ```bash
 # 创建自定义规则

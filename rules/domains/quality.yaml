@@ -54,8 +54,9 @@ rules:
         - "go.sum"
         - "requirements.lock"
       anyOf: true
-    description: "锁文件应入库以确保可复现构建（BEST-PRACTICES §5.4 验证链）"
-    note: "无包管理的仓库豁免"
+    description: "锁文件应入库以确保可复现构建（BEST-PRACTICES §5.4）——锁文件还须被 CI/验证链实际安装消费（npm ci / pip install -r requirements.lock 等），只入库不安装是装饰性合规；requirements.lock 非 pip 原生锁格式，CI 须显式写明安装它"
+    note: "无包管理的仓库豁免；零依赖仓（依赖声明为空，无锁对象）可用 .auditrc.yaml 豁免并注明原因"
+    fix_hint: "提交锁文件（package-lock.json / poetry.lock / go.sum / requirements.lock 任一）并确认 CI 安装步骤实际使用它（npm ci / pip install -r …）；零依赖仓在 .auditrc.yaml 豁免注明"
 
   - id: QUA-005
     title: "CLAUDE.md 桥接"

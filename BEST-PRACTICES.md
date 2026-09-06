@@ -159,7 +159,7 @@ gh repo edit <org>/dsh-<name> --add-topic deepseek-harness --add-topic dsh-plugi
 2. **peer 同范围复制进 devDependencies**（社区事实标准）：peer 不进自身依赖树 → tsc/测试/CI 找不到类型
 3. **单库化坑（subagent-router 实战）**：单库独立安装不装宿主包的 peer——**运行时可达的宿主 peer 包全部显式进 devDependencies**；判定法：`npm test` 报 `Cannot find package` 逐个补
 4. **devDep 精确 pin 特例**：`dsh-client-ui-slots` 的 module augmentation 要求与 runtime 解析副本一致，caret 会漂移致 SlotMap 双副本 → 该包 pin 精确版本（0.2.0 踩过 TS2664/TS2345）
-5. **版本锁定分工**：范围写 package.json（caret），具体版靠提交入库的 `package-lock.json`；CI `npm ci --legacy-peer-deps`（dsh alpha 生态 peer 链不完整）
+5. **版本锁定分工**：范围写 package.json（caret），具体版靠提交入库的 `package-lock.json`；CI `npm ci --legacy-peer-deps`（dsh alpha 生态 peer 链不完整）。锁文件的核心价值在**被消费**：CI/验证链必须实际安装它（`npm ci` / `pip install -r requirements.lock`）——只入库不安装是装饰性合规；`requirements.lock` 非 pip 原生锁格式，没有默认消费者，CI 须显式安装；零依赖仓（依赖声明为空）无锁对象，可豁免。
 
 ### 5.3 dual ESM/CJS（外部调研结论）
 

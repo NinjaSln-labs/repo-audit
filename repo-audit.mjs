@@ -202,7 +202,48 @@ function countNonHiddenFiles(path) {
   return count
 }
 
+// Issue#2 fix: 定位指定缩进层级下的具名子键（返回行号与缩进；未找到返回 null）
+function findNestedYamlKey(lines, startIdx, baseIndent, key) {
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const l = lines[i]
+    if (!l.trim() || l.trim().startsWith('#')) continue
+    const ind = l.length - l.trimStart().length
+    if (ind <= baseIndent) return null
+    if (ind !== baseIndent + 2) continue // 只看直接子层（YAML 常规 2 空格缩进）
+    const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
+    if (m && m[1] === key) return { idx: i, indent: ind }
+  }
+  return null
+}
+// Issue#2 fix: 列出指定父键下一层的所有子键名（通配 * 展开用）
+function listChildKeys(lines, startIdx, baseIndent) {
+  const keys = []
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const l = lines[i]
+    if (!l.trim() || l.trim().startsWith('#')) continue
+    const ind = l.length - l.trimStart().length
+    if (ind <= baseIndent) break
+    if (ind !== baseIndent + 2) continue
+    const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
+    if (m) keys.push(m[1])
+  }
+  return keys
+}
+
 // P0-3 fix: 嵌套 YAML 路径下钻查找（替代行级正则）
+// Issue#1 fix: 剥离行内注释（# 前须有空白；引号内 # 不算注释——按引号配对状态跳过）
+export function stripYamlComment(s) {
+  let str = s
+  // 整段以 # 开头（允许前导空白）→ 值为空（父级保持嵌套下钻语义）
+  if (/^\s*#/.test(str)) return ''
+  // 引号包裹：取第一个配对引号内的内容，引号后的尾注释丢弃
+  const q = str.match(/^(\s*)(['"])([\s\S]*?)\2(?:\s+#.*)?$/)
+  if (q) return q[3].trim()
+  // 无引号：以「空白+#」为注释分隔，截断尾部
+  const cut = str.search(/\s#/)
+  if (cut !== -1) str = str.slice(0, cut)
+  return str.trim()
+}
 function findNestedYaml(lines, startIdx, baseIndent, segments) {
   let currentIndent = baseIndent
   for (let i = startIdx + 1; i < lines.length; i++) {
@@ -213,7 +254,7 @@ function findNestedYaml(lines, startIdx, baseIndent, segments) {
     const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
     if (m) {
       const key = m[1]
-      const valStr = m[2].trim()
+      const valStr = stripYamlComment(m[2])
       const seg = segments[0]
       if (key === seg) {
         if (valStr && valStr !== '' && valStr !== '{}') {
@@ -650,7 +691,7 @@ function loadRules(type, customPaths = [], repoPath = null) {
     grep:           { pattern: ['string'] },
     json_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'] },
     toml_field:     { path: ['string'], field: ['string'] },
-    yaml_field:     { path: ['string'], field: ['string'] },
+    yaml_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'] },
     directory_exists: { paths: ['array', 'string'] },
     not_exists:     { paths: ['array', 'string'] },
     glob_count:     { pattern: ['string'] },
@@ -1007,7 +1048,7 @@ function runCheck(rule, repoPath, mpj = null) {
           const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
           if (m && m[1] === segments[0]) {
             currentIndent = ind
-            const valStr = m[2].trim()
+            const valStr = stripYamlComment(m[2])
             if (valStr && valStr !== '' && valStr !== '{}') {
               // 标量值（非嵌套）
               val = valStr
@@ -1027,6 +1068,77 @@ function runCheck(rule, repoPath, mpj = null) {
       } else {
         passed = false
         evidence = '字段不存在或值不匹配'
+      }
+      // Issue#2 fix: yaml_field fallback_field——主字段不匹配时逐个尝试备选字段路径（数组形态）。
+      // 用途：同一语义在不同 YAML 形态下的位置差异（如 id-token: write 可在 workflow 顶层
+      // 或 publish job 级——PyPA 最小化权限模式），任一命中即 pass。
+      // 段内 `*` 为通配（如 jobs.*.permissions.id-token）：在该层级所有子键下逐个尝试。
+      if (!passed && params?.fallback_field) {
+        const fbList = Array.isArray(params.fallback_field) ? params.fallback_field : [params.fallback_field]
+        for (const fbField of fbList) {
+          if (!fbField) continue
+          const fbSegments = String(fbField).split('.')
+          const candidates = [] // 每项 {segments} —— 通配展开后的具体路径列表
+          const expandWildcard = (segs) => {
+            const wIdx = segs.indexOf('*')
+            if (wIdx === -1) { candidates.push({ segments: segs }); return }
+            // 找通配段父级的所有子键：先定位父级前缀（逐段下钻收集行号）
+            const lines = content.split('\n')
+            const prefix = segs.slice(0, wIdx)
+            const suffix = segs.slice(wIdx + 1)
+            // 顶层段
+            if (prefix.length === 0) return
+            for (let i = 0; i < lines.length; i++) {
+              const l = lines[i]
+              if (!l.trim() || l.trim().startsWith('#')) continue
+              const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
+              if (!m || m[1] !== prefix[0]) continue
+              // 沿 prefix 下钻
+              let curIdx = i, curIndent = l.length - l.trimStart().length
+              let ok = true
+              for (let d = 1; d < prefix.length; d++) {
+                const sub = findNestedYamlKey(lines, curIdx, curIndent, prefix[d])
+                if (!sub) { ok = false; break }
+                curIdx = sub.idx; curIndent = sub.indent
+              }
+              if (!ok) return
+              // 列出 curIndent 下一层的所有子键
+              const childKeys = listChildKeys(lines, curIdx, curIndent)
+              for (const k of childKeys) expandWildcard([...prefix, k, ...suffix])
+              return
+            }
+          }
+          expandWildcard(fbSegments)
+          for (const cand of candidates) {
+            let fbVal = null
+            let fbFound = false
+            try {
+              const lines = content.split('\n')
+              for (let i = 0; i < lines.length; i++) {
+                const l = lines[i]
+                if (!l.trim() || l.trim().startsWith('#')) continue
+                const ind = l.length - l.trimStart().length
+                const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
+                if (m && m[1] === cand.segments[0]) {
+                  const v = stripYamlComment(m[2])
+                  if (v && v !== '' && v !== '{}') { fbVal = v; fbFound = true }
+                  else {
+                    const sub = findNestedYaml(lines, i, ind, cand.segments.slice(1))
+                    if (sub.found) { fbVal = sub.value; fbFound = true }
+                  }
+                  break
+                }
+              }
+            } catch {}
+            if (fbFound && String(fbVal).trim() === expected) {
+              passed = true
+              const concrete = cand.segments.join('.')
+              evidence = `fallback ${concrete} = ${String(fbVal).trim()}`
+              break
+            }
+          }
+          if (passed) break
+        }
       }
       break
     }
@@ -1539,7 +1651,11 @@ ${message}
   process.exit(hasCritical && strict ? 1 : 0)
 }
 
-main().catch(err => {
-  console.error(`✗ 运行时错误: ${err.message}`)
-  process.exit(2)
-})
+// Issue#1 fix: 入口守卫——仅直接作为 CLI 运行时执行主流程；被 import（测试/编程复用）不跑
+const isDirectRun = import.meta.url === `file://${process.argv[1]}`
+if (isDirectRun) {
+  main().catch(err => {
+    console.error(`✗ 运行时错误: ${err.message}`)
+    process.exit(2)
+  })
+}

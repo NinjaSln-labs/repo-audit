@@ -72,8 +72,9 @@ rules:
     params:
       path: ".github/workflows/publish.yml"
       field: "permissions.id-token"
+      fallback_field: ["jobs.*.permissions.id-token"]
       expected: "write"
       skip_if_no_file: ".github/workflows/publish.yml"
-    description: "publish workflow 必须请求 id-token: write 权限（OIDC Trusted Publishing）"
+    description: "publish workflow 必须请求 id-token: write 权限（OIDC Trusted Publishing）——工作流顶层或 publish job 级任一即可（job 级为 PyPA 推荐的最小化模式）"
     template_ref: "templates/repo-root/.github/workflows/publish.yml"
-    fix_hint: "在 workflow 顶部添加 permissions: id-token: write"
+    fix_hint: "在 publish workflow 声明 permissions.id-token: write——顶层（permissions: 块内）或仅 publish job（jobs.publish.permissions: 块内）均可；推荐 job 级（最小化，其他 job 不持有 OIDC 权限）"
