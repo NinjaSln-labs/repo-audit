@@ -1,5 +1,5 @@
 {
-  "name": "repo-audit",
+  "name": "@ninjasln-labs/repo-audit",
   "version": "1.2.0",
   "description": "仓库标准化审计工具 + 工程脚手架生成器（零依赖）",
   "type": "module",
