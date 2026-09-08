@@ -7,6 +7,8 @@
 - 实测背书：fuyao-nomad 仓（Issue#5 复现仓）`waived_since` 现为纯日期字符串 `"2026-09-06"`，`waived_reason` 保持正确，`summary.waived=1`
 - 验证链：自审计 100/A 19/19 + verify 4/4 + test 17/17（12→17，新增 5 用例）
 - 待办：tag v1.3.3 自动发版 + Issue#5 带说明关闭
+- ✅ v1.3.3 发布：`7613f6e` tag → Trusted Publisher 自动发布（npm latest + SLSA provenance `logIndex=2758379402`）
+- ✅ Issue#5 带说明关闭（含对反馈者根因定位与方案采纳的致谢）
 
 ## 2026-09-07 — Issue#4 闭环（v1.3.2）
 
