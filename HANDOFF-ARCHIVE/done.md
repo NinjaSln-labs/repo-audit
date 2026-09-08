@@ -1,4 +1,13 @@
 
+## 2026-09-08 — Issue#5 闭环（.auditrc.yaml since 引号剥离）
+
+- 接手即检测到新 Issue#5（反馈检测当场兑现：Issue#4 关闭后 27 小时即有新反馈，证实 HANDOFF §1「快照会过期」教训）
+- 根因：`loadAuditrc` 中 `reason:` 分支有 `.replace(/['"]/g, '')` 去引号，`since:` 分支漏了——导致 `since: "2026-09-06"` 被解析成含字面内嵌引号的字符串，与 `SCHEMA.json` 声明的 `waived_since: ["string","null"]`（期望纯日期）不一致
+- `b5e7c33` since 分支补 `.replace(/['"]/g, '')` 与 reason 分支对齐（一行）+ loadAuditrc 导出 + 5 用例回归（test/auditrc-since.test.mjs）
+- 实测背书：fuyao-nomad 仓（Issue#5 复现仓）`waived_since` 现为纯日期字符串 `"2026-09-06"`，`waived_reason` 保持正确，`summary.waived=1`
+- 验证链：自审计 100/A 19/19 + verify 4/4 + test 17/17（12→17，新增 5 用例）
+- 待办：tag v1.3.3 自动发版 + Issue#5 带说明关闭
+
 ## 2026-09-07 — Issue#4 闭环（v1.3.2）
 
 - 接手即检测到新 Issue#4（HANDOFF 快照「队列清零」已过期）→ 用户确认完整闭环方案
