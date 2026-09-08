@@ -274,7 +274,7 @@ function findNestedYaml(lines, startIdx, baseIndent, segments) {
 // P3: 项目定位识别 —— 扫描 README 首段检测个人/自用项目
 
 // P5: 加载仓库级 .auditrc.yaml 豁免配置
-function loadAuditrc(repoPath) {
+export function loadAuditrc(repoPath) {
   const rcPath = join(repoPath, '.auditrc.yaml')
   if (!existsSync(rcPath)) return { waive: [] }
   const content = readFileSafe(rcPath)
@@ -295,7 +295,7 @@ function loadAuditrc(repoPath) {
       } else if (cur && trimmed.startsWith('reason:')) {
         cur.reason = trimmed.replace('reason:', '').replace(/['"]/g, '').trim()
       } else if (cur && trimmed.startsWith('since:')) {
-        cur.since = trimmed.replace('since:', '').trim()
+        cur.since = trimmed.replace('since:', '').replace(/['"]/g, '').trim()
       }
     }
     if (cur) waive.push(cur)
