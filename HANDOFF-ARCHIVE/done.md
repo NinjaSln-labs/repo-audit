@@ -52,3 +52,11 @@
 - commits 数字误记 30 → 实际 27（`git rev-list --count HEAD` 为准）——第五次快照手数估算未实测
 - §2 占位边界残留过期条目「GitHub 远端发布未执行」（实际 2026-09-06 已完成）——回填时只改 §3 忘清 §2
 - 发现并确认：HANDOFF.md 本身在 .gitignore（`cbb7e40` 裁定：内部路径不入开源），只有 HANDOFF-ARCHIVE/ 入库——第五次快照未记此事实，接收方可能误以为 HANDOFF.md 在库里
+
+## 2026-09-09 — Issue#6 闭环（yaml_field 解析健壮性）
+
+- 第十次接手反馈检测当场命中 Issue#6（yaml_field fallback 通配展开误判 SEC-004 fail）
+- **根因更正**：issue 引用的 `minIndent`/`ind < minIndent` 代码在 v1.4.0 已不存在；issue 原始复现在 v1.4.0 实测 pass。实测复现出三个同族真实缺陷：CRLF 行尾（`(.*)$` 不吞 `\r`）、引号键名（`\w[\w\-]*` 不识别 `"publish":`）、硬编码 `baseIndent+2` 缩进（4 空格 workflow 全失配）
+- `ef813f9` normalizeYamlLines（剥 `\r`）+ matchYamlKey（裸键/双引号/单引号统一）+ 子层缩进以首个子键实际缩进为准；收口 findNestedYamlKey/listChildKeys/findNestedYaml/yaml_field 主路径+fallback 全部解析点；6 用例回归（test/yaml-field-issue6.test.mjs）+ HUMAN-GUIDE 12.4b / AGENT-GUIDE 4.7 同步
+- 验证链：自审计 100/A 19/19 + verify 4/4 + test 38/38（32→38）；影子回归 qingfu-envoy/neonforge/fuyao-nomad/dsh-knowledge-sqlite 均 100/A 无回归
+- ✅ Issue#6 带说明关闭（含根因更正与三缺陷明细）；待办：随下版 tag 发布
