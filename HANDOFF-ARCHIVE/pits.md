@@ -72,3 +72,20 @@
 - **修复**：`pathToFileURL(realpathSync(argv[1])).href`（Issue#4 反馈者方案，win32 实测背书）+ 测试改 `fileURLToPath`（`a758398` + `d8b89a0`，v1.3.2）
 - **配套加固**：守卫不命中时 stderr 诊断提示（不再静默 exit 0）；CI 加 windows-latest 矩阵 + npm pack→安装→bin smoke；command 检查器 win32 Git Bash 探测
 - **教训**：**win32 URL↔路径转换必须走 node:url 的 pathToFileURL/fileURLToPath 正解，禁止手工拼接**；入口/路径类代码本地 Linux 全绿不算数，必须过 CI windows 矩阵实跑
+
+## P-008: 测试内 spawnSync('node') / process.execPath 在 win32 均 ENOENT（v1.4.1 回归）
+
+- **发现时间**：2026-09-09（v1.4.1 发版前 CI windows 矩阵连抓两轮）
+- **症状**：Issue#6 回归测试用 `execFileSync('node', …)` 起 CLI——windows runner 报 `spawnSync node ENOENT`；改 `process.execPath` 后仍 ENOENT（`C:\hostedtoolcache\...\node.exe`）
+- **根因**：win32 下 spawnSync 走 PATHEXT/shell 解析，`node` 命令与 `node.exe` 直调两条路都不可靠（P-007 同族：本地 Linux 全绿测不出）
+- **修复**：引擎导出 `runCheckForTest`，回归测试**进程内直调 runCheck**，彻底规避子进程（`ccc4a52`）
+- **教训**：测试需要跑引擎时优先进程内直调（导出测试专用入口），spawnSync 子进程是 win32 雷区；入口/路径类改动仍须过 CI windows 矩阵
+
+## P-009: Pages 项目站 ../ 相对链接上溯出站点 — 卡片 404（UI/UX 审计发现）
+
+- **发现时间**：2026-09-09（GitHub Pages 站点 UI/UX 审计，评分 5.5/10）
+- **症状**：首页四张文档卡（AUDIT.md/BEST-PRACTICES.md/REPO-CLASSIFICATION.md/templates/README.md）全部 404
+- **根因**：Pages workflow 只上传 `docs/`，index.html 用 `../` 指仓库根文件；且项目站有 `/repo-audit/` 前缀，`../` 从站点页上溯到 `https://ninjasln-labs.github.io/` 根域，必然 404
+- **修复**：pages workflow build 步骤同步根目录文档进 `docs/` + index.html `../` 全改 `./`（`3443355`）
+- **连带坑**：**根目录文档改动不触发 pages workflow**（paths 只含 `docs/**`）——改 AUDIT.md 等需手动 workflow_dispatch 或顺带改 docs/ 内文件
+- **教训**：Pages 项目站内链接一律用站内相对路径（`./`），禁止 `../` 上溯；站点引用的仓库根文件必须在 build 步骤显式同步进发布目录
