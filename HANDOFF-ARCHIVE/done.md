@@ -60,3 +60,10 @@
 - `ef813f9` normalizeYamlLines（剥 `\r`）+ matchYamlKey（裸键/双引号/单引号统一）+ 子层缩进以首个子键实际缩进为准；收口 findNestedYamlKey/listChildKeys/findNestedYaml/yaml_field 主路径+fallback 全部解析点；6 用例回归（test/yaml-field-issue6.test.mjs）+ HUMAN-GUIDE 12.4b / AGENT-GUIDE 4.7 同步
 - 验证链：自审计 100/A 19/19 + verify 4/4 + test 38/38（32→38）；影子回归 qingfu-envoy/neonforge/fuyao-nomad/dsh-knowledge-sqlite 均 100/A 无回归
 - ✅ Issue#6 带说明关闭（含根因更正与三缺陷明细）；待办：随下版 tag 发布
+
+## 2026-09-09 — v1.4.1 发布（Issue#6 修复上 npm）
+
+- CI windows 矩阵抓到回归测试两轮 win32 spawn 坑：`spawnSync('node')` 走 PATHEXT 解析 ENOENT → `process.execPath` 仍 ENOENT（hostedtoolcache node.exe 无扩展解析），最终改**进程内直调 `runCheckForTest`**（新增导出）彻底规避子进程
+- 版本同步：package.json + AGENT-INDEX.json（version/updated/changelog.1.4.1）
+- `npm view versions` 预检确认 1.4.1 未占用 → tag `v1.4.1` → Trusted Publisher 自动发布：npm latest + SLSA provenance（`logIndex=2772589051`）
+- 实机验收：npm pack → 干净 prefix 安装 → bin 实测 qingfu-envoy 100/A
