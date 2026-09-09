@@ -325,30 +325,49 @@ function countNonHiddenFiles(path) {
   return count
 }
 
-// Issue#2 fix: 定位指定缩进层级下的具名子键（返回行号与缩进；未找到返回 null）
+// Issue#6 fix: 规范化 YAML 行——剥离行尾 \r（CRLF 文件在 Linux 审计时 (.*)$ 不吞 \r，
+// 标量值带尾 \r 导致与 expected 比较全部失配）；行内键名引号在匹配处单独处理
+function normalizeYamlLines(content) {
+  return String(content).split('\n').map(l => l.replace(/\r$/, ''))
+}
+// Issue#6 fix: YAML 键名匹配——兼容裸键与引号键（"publish": / 'publish':），
+// 返回 [key, valueRest]；非键行返回 null
+function matchYamlKey(l) {
+  const m = l.match(/^(\s*)(?:"([^"]+)"|'([^']+)'|(\w[\w\-]*))\s*:\s*(.*)$/)
+  if (!m) return null
+  return [m[2] ?? m[3] ?? m[4], m[5]]
+}
+
+// Issue#6 fix: 定位指定缩进层级下的具名子键（返回行号与缩进；未找到返回 null）
+// 子层缩进以本层首个子键的实际缩进为准（兼容 2/4 空格等缩进风格），不再硬编码 +2
 function findNestedYamlKey(lines, startIdx, baseIndent, key) {
+  let childIndent = -1
   for (let i = startIdx + 1; i < lines.length; i++) {
     const l = lines[i]
     if (!l.trim() || l.trim().startsWith('#')) continue
     const ind = l.length - l.trimStart().length
     if (ind <= baseIndent) return null
-    if (ind !== baseIndent + 2) continue // 只看直接子层（YAML 常规 2 空格缩进）
-    const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-    if (m && m[1] === key) return { idx: i, indent: ind }
+    if (childIndent === -1) childIndent = ind // 本层首个子键确定子层缩进
+    if (ind !== childIndent) continue // 只看直接子层
+    const km = matchYamlKey(l)
+    if (km && km[0] === key) return { idx: i, indent: ind }
   }
   return null
 }
 // Issue#2 fix: 列出指定父键下一层的所有子键名（通配 * 展开用）
+// 子层缩进同样以首个子键实际缩进为准（与 findNestedYamlKey 对称）
 function listChildKeys(lines, startIdx, baseIndent) {
   const keys = []
+  let childIndent = -1
   for (let i = startIdx + 1; i < lines.length; i++) {
     const l = lines[i]
     if (!l.trim() || l.trim().startsWith('#')) continue
     const ind = l.length - l.trimStart().length
     if (ind <= baseIndent) break
-    if (ind !== baseIndent + 2) continue
-    const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-    if (m) keys.push(m[1])
+    if (childIndent === -1) childIndent = ind
+    if (ind !== childIndent) continue
+    const km = matchYamlKey(l)
+    if (km) keys.push(km[0])
   }
   return keys
 }
@@ -374,10 +393,10 @@ function findNestedYaml(lines, startIdx, baseIndent, segments) {
     if (!l.trim() || l.trim().startsWith('#')) continue
     const ind = l.length - l.trimStart().length
     if (ind <= currentIndent) break // 退出当前层级
-    const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-    if (m) {
-      const key = m[1]
-      const valStr = stripYamlComment(m[2])
+    const km = matchYamlKey(l)
+    if (km) {
+      const key = km[0]
+      const valStr = stripYamlComment(km[1])
       const seg = segments[0]
       if (key === seg) {
         if (valStr && valStr !== '' && valStr !== '{}') {
@@ -1187,7 +1206,7 @@ function runCheck(rule, repoPath, mpj = null) {
       let val = null
       let found = false
       try {
-        const lines = content.split('\n')
+        const lines = normalizeYamlLines(content)
         let currentIndent = -1
         let currentObj = null
         // 第一遍：找到顶层键
@@ -1195,10 +1214,10 @@ function runCheck(rule, repoPath, mpj = null) {
           const l = lines[i]
           if (!l.trim() || l.trim().startsWith('#')) continue
           const ind = l.length - l.trimStart().length
-          const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-          if (m && m[1] === segments[0]) {
+          const km = matchYamlKey(l)
+          if (km && km[0] === segments[0]) {
             currentIndent = ind
-            const valStr = stripYamlComment(m[2])
+            const valStr = stripYamlComment(km[1])
             if (valStr && valStr !== '' && valStr !== '{}') {
               // 标量值（非嵌套）
               val = valStr
@@ -1233,7 +1252,7 @@ function runCheck(rule, repoPath, mpj = null) {
             const wIdx = segs.indexOf('*')
             if (wIdx === -1) { candidates.push({ segments: segs }); return }
             // 找通配段父级的所有子键：先定位父级前缀（逐段下钻收集行号）
-            const lines = content.split('\n')
+            const lines = normalizeYamlLines(content)
             const prefix = segs.slice(0, wIdx)
             const suffix = segs.slice(wIdx + 1)
             // 顶层段
@@ -1241,8 +1260,8 @@ function runCheck(rule, repoPath, mpj = null) {
             for (let i = 0; i < lines.length; i++) {
               const l = lines[i]
               if (!l.trim() || l.trim().startsWith('#')) continue
-              const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-              if (!m || m[1] !== prefix[0]) continue
+              const km = matchYamlKey(l)
+              if (!km || km[0] !== prefix[0]) continue
               // 沿 prefix 下钻
               let curIdx = i, curIndent = l.length - l.trimStart().length
               let ok = true
@@ -1263,14 +1282,14 @@ function runCheck(rule, repoPath, mpj = null) {
             let fbVal = null
             let fbFound = false
             try {
-              const lines = content.split('\n')
+              const lines = normalizeYamlLines(content)
               for (let i = 0; i < lines.length; i++) {
                 const l = lines[i]
                 if (!l.trim() || l.trim().startsWith('#')) continue
                 const ind = l.length - l.trimStart().length
-                const m = l.match(/^\s*(\w[\w\-]*)\s*:\s*(.*)$/)
-                if (m && m[1] === cand.segments[0]) {
-                  const v = stripYamlComment(m[2])
+                const km = matchYamlKey(l)
+                if (km && km[0] === cand.segments[0]) {
+                  const v = stripYamlComment(km[1])
                   if (v && v !== '' && v !== '{}') { fbVal = v; fbFound = true }
                   else {
                     const sub = findNestedYaml(lines, i, ind, cand.segments.slice(1))

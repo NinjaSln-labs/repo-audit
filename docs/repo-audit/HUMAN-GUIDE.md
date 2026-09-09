@@ -688,6 +688,15 @@ params:
   fallback_field: "scripts.test"
 ```
 
+### 12.4b yaml_field fallback_field 与解析健壮性（Issue#6）
+
+`yaml_field` 支持 `fallback_field`（数组）：主字段不匹配时逐个尝试备选路径，段内 `*` 为通配（如 `jobs.*.permissions.id-token`——顶层无 `permissions.id-token` 时，任一 job 级命中即 pass，覆盖 PyPA 最小化权限模式）。
+
+解析健壮性（v1.4.1 修复，Issue#6）：
+- **CRLF 行尾**：行解析前统一剥离 `\r`，Windows 编辑的 workflow 不再标量失配
+- **引号键名**：`"publish":` / `'publish':` 与裸键等价识别
+- **缩进风格**：子层缩进以首个子键实际缩进为准（2/4 空格等风格均支持，不再硬编码 +2）
+
 ### 12.5 toml_field expect_table
 
 检查 TOML 表头存在性（而非表内键值）：

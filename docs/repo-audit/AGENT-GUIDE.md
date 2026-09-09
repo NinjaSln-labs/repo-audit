@@ -275,6 +275,10 @@ EOF
 node repo-audit.mjs --repo /path/to/repo --rules /tmp/my-rules.yaml --format json
 ```
 
+### 4.7 yaml_field fallback_field 与解析健壮性（Issue#6）
+
+`yaml_field` 支持 `fallback_field`（数组）：主字段不匹配时逐个尝试备选路径，段内 `*` 为通配展开（如 `jobs.*.permissions.id-token`——任一 job 级命中即 pass，覆盖 PyPA 最小化权限模式）。解析层（v1.4.1）统一剥离 CRLF 行尾 `\r`、识别引号键名、按首个子键实际缩进确定子层（2/4 空格风格均支持）。误判排查时优先确认 workflow 文件是否踩过这三类形态。
+
 ---
 
 ## 五、错误处理协议
