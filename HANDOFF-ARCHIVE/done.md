@@ -67,3 +67,10 @@
 - 版本同步：package.json + AGENT-INDEX.json（version/updated/changelog.1.4.1）
 - `npm view versions` 预检确认 1.4.1 未占用 → tag `v1.4.1` → Trusted Publisher 自动发布：npm latest + SLSA provenance（`logIndex=2772589051`）
 - 实机验收：npm pack → 干净 prefix 安装 → bin 实测 qingfu-envoy 100/A
+
+## 2026-09-09 — GitHub Pages 站点 UI/UX 审计全修复
+
+- 审计（Krug + Nielsen + WCAG 实测 + 链接可达性）评分 5.5/10，C-1 catastrophic：四张卡片链 ../AUDIT.md 等全部 404——Pages workflow 只上传 docs/，且 ../ 在项目站前缀下上溯出站点
+- 修复：pages workflow build 步骤同步根目录文档进 docs/（AUDIT/BEST-PRACTICES/REPO-CLASSIFICATION/templates/README）；index.html ../ 全部改 ./；JSON-LD `①type` 编码事故→`@type`、softwareVersion 1.2.1→1.4.1；badge 数字对齐实测（55 条规则 · 19 种分类，「CI 全绿」静态 badge 移除——不可信的动态声明不如不放）；badge 绿底白字 2.54:1 → #1f6feb 蓝（WCAG AA）；移动端 nav flex-wrap + 640px 断点；补 theme-color/description/OG 标签；scaffold 命令补 clone 前置说明；docs/pages/ 空目录清除
+- 线上验收：四个 404 全转 200，JSON-LD valid（@type + 1.4.1），badge 数字/CI badge 移除已生效
+- 注意：docs/AUDIT.md 等四文件为 workflow 构建产物性质的**仓库内副本**，根目录文档改动后需重跑 pages workflow（paths 已含 docs/** 但根文档不在触发路径，改根文档需手动 workflow_dispatch 或顺带改 docs/）
