@@ -10,6 +10,10 @@
 
 ## 版本历史
 
+- **1.4.0** — json_field workspace 递归：monorepo 场景下递归检查所有 workspace 包
+  的 license 字段；findWorkspacePackages（npm workspaces 数组 / pnpm workspaces.packages /
+  常见目录扫描兜底）+ checkJsonFieldContent 提取复用 + DOC-003b 启用；
+  15 用例回归（2026-09-08）
 - **1.3.2** — Issue#4 修复：入口守卫 `pathToFileURL` 归一化，修复 Windows 全形态
   静默不执行（v1.3.1 回归）；守卫 stderr 诊断提示；command 检查器 Git Bash 探测；
   CI 加 windows-latest 矩阵 + npm 安装 smoke 步骤（2026-09-07）
