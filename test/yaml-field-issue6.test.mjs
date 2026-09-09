@@ -9,6 +9,8 @@ import { execFileSync } from 'node:child_process'
 import { stripYamlComment } from '../repo-audit.mjs'
 
 const TOOL = new URL('..', import.meta.url).pathname
+// win32: spawnSync('node') 走 PATHEXT 需要 shell 解析，直接用 process.execPath（P-007 教训）
+const NODE = process.execPath
 
 // 复现辅助：建最小 python-app 仓 + 指定 publish.yml 内容 → 返回 SEC-004 判定
 function auditSec004(yamlContent) {
@@ -18,7 +20,7 @@ function auditSec004(yamlContent) {
     writeFileSync(join(dir, 'pyproject.toml'), '[project]\nname = "demo"\n')
     mkdirSync(join(dir, '.github/workflows'), { recursive: true })
     writeFileSync(join(dir, '.github/workflows/publish.yml'), yamlContent)
-    const out = execFileSync('node', [join(TOOL, 'repo-audit.mjs'), '--repo', dir, '--format', 'json'], {
+    const out = execFileSync(NODE, [join(TOOL, 'repo-audit.mjs'), '--repo', dir, '--format', 'json'], {
       cwd: TOOL, encoding: 'utf8',
     })
     const report = JSON.parse(out)
