@@ -22,6 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Sync root docs into site
+        run: |
+          # index.html 卡片链到的根目录文档同步进 docs/；
+          # ../ 相对链接在 Pages 项目站（/repo-audit/ 前缀）下会上溯出站点致 404，
+          # 故 index.html 同步改为 ./ 前缀（见同提交）
+          cp AUDIT.md BEST-PRACTICES.md REPO-CLASSIFICATION.md docs/
+          mkdir -p docs/templates
+          cp templates/README.md docs/templates/README.md
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload docs artifact
