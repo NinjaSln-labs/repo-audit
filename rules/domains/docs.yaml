@@ -43,7 +43,8 @@ rules:
       path: "package.json"
       field: "license"
       fallback_field: ["dependencies", "peerDependencies", "devDependencies"]
-    description: "package.json 应有 license 字段（SPDX 标识）"
+      workspace_recursive: true
+    description: "package.json 应有 license 字段（SPDX 标识）；monorepo 需所有 workspace 包均声明 license 字段"
     note: "仅对含 package.json 的 JS 项目检查"
 
   - id: DOC-004

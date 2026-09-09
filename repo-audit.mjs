@@ -170,6 +170,129 @@ function findPackageJson(repoPath) {
   return null
 }
 
+// ============================================================
+// workspace 递归 — 发现所有 workspace 包（根 + workspace globs + 常见目录）
+// ============================================================
+
+export function findWorkspacePackages(repoPath) {
+  const results = []
+  const seen = new Set()
+
+  const tryAdd = (pkgPath) => {
+    const resolved = resolve(pkgPath)
+    if (seen.has(resolved)) return
+    seen.add(resolved)
+    // 跳过 node_modules 和隐藏目录
+    const parts = resolved.split('/').join('\/')
+    if (parts.includes('node_modules')) return
+    const pkg = readJsonSafe(pkgPath)
+    if (pkg) {
+      results.push({ path: pkgPath, pkg, dir: dirname(pkgPath) })
+    }
+  }
+
+  // 1. 根 package.json
+  const rootPkgPath = join(repoPath, 'package.json')
+  tryAdd(rootPkgPath)
+
+  // 2. 根 package.json 的 workspaces 字段（npm: 数组 / pnpm: {packages:[...]}）
+  const rootPkg = readJsonSafe(rootPkgPath)
+  if (rootPkg?.workspaces) {
+    const globs = Array.isArray(rootPkg.workspaces)
+      ? rootPkg.workspaces
+      : (rootPkg.workspaces.packages || [])
+    for (const glob of globs) {
+      expandWorkspaceGlob(repoPath, glob, tryAdd)
+    }
+  }
+
+  // 3. 常见 workspace 目录扫描（无 workspaces 字段时的兜底）
+  const patterns = ['apps', 'packages', 'workspaces', 'components', 'modules', 'libs', 'projects']
+  for (const pattern of patterns) {
+    const patternDir = join(repoPath, pattern)
+    if (!existsSync(patternDir)) continue
+    try {
+      for (const entry of readdirSync(patternDir, { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue
+        tryAdd(join(patternDir, entry.name, 'package.json'))
+      }
+    } catch {}
+  }
+
+  return results
+}
+
+function expandWorkspaceGlob(repoPath, glob, tryAdd) {
+  // 直接路径（无 glob 字符）
+  if (!glob.includes('*')) {
+    tryAdd(join(repoPath, glob, 'package.json'))
+    return
+  }
+  // 常见 glob 模式：base/* 或 base/**/*
+  const baseDir = join(repoPath, glob.split('*')[0].replace(/\/$/, ''))
+  if (!existsSync(baseDir)) return
+  try {
+    for (const entry of readdirSync(baseDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.name.startsWith('.') || entry.name === 'node_modules') continue
+      tryAdd(join(baseDir, entry.name, 'package.json'))
+    }
+  } catch {}
+}
+
+// ============================================================
+// json_field 核心检查逻辑（供 workspace 递归复用）
+// ============================================================
+
+export function checkJsonFieldContent(content, params) {
+  const result = { passed: false, evidence: '', value: undefined }
+  try {
+    const obj = JSON.parse(content)
+    const fields = (params?.field || '').split('.')
+    let val = obj
+    let missing = false
+    let missingField = null
+    for (const f of fields) {
+      if (val === undefined || val === null) { missing = true; missingField = f; break }
+      val = val[f]
+    }
+    if (missing) {
+      result.evidence = `字段 ${missingField} 不存在`
+    } else if (val !== undefined && val !== null) {
+      result.passed = true
+      result.value = val
+      result.evidence = `字段 ${params.field} = ${JSON.stringify(val)?.slice(0, 100)}`
+    } else {
+      result.evidence = `字段 ${params.field} = ${JSON.stringify(val)?.slice(0, 100)}`
+    }
+    // fallback_field（如 peerDeps 不存在时检查 devDeps）
+    if (!result.passed && params?.fallback_field) {
+      const fbFields = Array.isArray(params.fallback_field)
+        ? params.fallback_field
+        : params.fallback_field.split('.')
+      for (const candidate of fbFields) {
+        const segs = Array.isArray(candidate) ? candidate : candidate.split('.')
+        let fbVal = obj
+        for (const f of segs) {
+          if (fbVal === undefined || fbVal === null) break
+          fbVal = fbVal[f]
+        }
+        if (fbVal !== undefined && fbVal !== null) {
+          result.passed = true
+          result.value = fbVal
+          const matchedField = Array.isArray(params.fallback_field)
+            ? String(candidate)
+            : params.fallback_field
+          result.evidence = `字段 ${params.field} 不存在，但 ${matchedField} = ${JSON.stringify(fbVal)?.slice(0, 100)}`
+          break
+        }
+      }
+    }
+  } catch (e) {
+    result.evidence = `JSON 解析失败: ${e.message}`
+  }
+  return result
+}
+
 function readFileSafe(path) {
 
   try { return readFileSync(path, 'utf-8') } catch { return null }
@@ -724,7 +847,7 @@ function loadRules(type, customPaths = [], repoPath = null) {
     file_header:    { path: ['string'], pattern: ['string'] },
     regex:          { path: ['string'], pattern: ['string'] },
     grep:           { pattern: ['string'] },
-    json_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'] },
+    json_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'], workspace_recursive: ['boolean'] },
     toml_field:     { path: ['string'], field: ['string'] },
     yaml_field:     { path: ['string'], field: ['string'], fallback_field: ['array', 'string'] },
     directory_exists: { paths: ['array', 'string'] },
@@ -962,53 +1085,45 @@ function runCheck(rule, repoPath, mpj = null) {
     }
 
     case 'json_field': {
+      const pathParam = params?.path
+      const workspaceRecursive = params?.workspace_recursive === true
+
+      // workspace 递归：检查所有 workspace 包
+      if (workspaceRecursive && pathParam === 'package.json') {
+        const allPkgs = findWorkspacePackages(repoPath)
+        if (allPkgs.length === 0) {
+          passed = false; evidence = '未找到任何 package.json'; break
+        }
+        const results = []
+        let allPassed = true
+        for (const wp of allPkgs) {
+          const content = readFileSafe(wp.path)
+          if (!content) {
+            results.push(`${wp.dir === repoPath ? '根' : relative(repoPath, wp.dir)}: 文件不可读 ✗`)
+            allPassed = false; continue
+          }
+          const r = checkJsonFieldContent(content, params)
+          const relPath = wp.dir === repoPath ? '根' : relative(repoPath, wp.dir)
+          results.push(`${relPath}: ${r.evidence} ${r.passed ? '✓' : '✗'}`)
+          if (!r.passed) allPassed = false
+        }
+        passed = allPassed
+        evidence = results.join(' | ')
+        break
+      }
+
       // P6: monorepo 感知 — package.json 不在根时 fallback 到 workspace 目录
-      let actualPath = join(repoPath, params?.path)
+      let actualPath = join(repoPath, pathParam)
       let workspaceHint = ''
-      if (!readFileSafe(actualPath) && params?.path === 'package.json' && mpj) {
+      if (!readFileSafe(actualPath) && pathParam === 'package.json' && mpj) {
         actualPath = mpj.path
         workspaceHint = `（workspace: ${mpj.dir}）`
       }
       const content = readFileSafe(actualPath)
       if (!content) { passed = false; evidence = '文件不存在'; break }
-      try {
-        const obj = JSON.parse(content)
-        const fields = (params?.field || '').split('.')
-        let val = obj
-        let missing = false
-        for (const f of fields) {
-          if (val === undefined || val === null) { passed = false; evidence = `字段 ${f} 不存在`; missing = true; break }
-          val = val[f]
-        }
-        if (!missing) {
-          passed = val !== undefined && val !== null
-          evidence = `字段 ${params.field} = ${JSON.stringify(val)?.slice(0, 100)}${workspaceHint}`
-        }
-        // P1-2 fix: 支持 fallback_field（如 peerDeps 不存在时检查 devDeps）
-        // 支持两种格式：数组 ["deps", "peerDeps", "devDeps"] 或字符串 "deps"（点路径）
-        if (!passed && params?.fallback_field) {
-          const fbFields = Array.isArray(params.fallback_field)
-            ? params.fallback_field
-            : params.fallback_field.split('.')
-          // 对每个候选字段，尝试在 obj 中查找
-          for (const candidate of fbFields) {
-            const segs = Array.isArray(candidate) ? candidate : candidate.split('.')
-            let fbVal = obj
-            for (const f of segs) {
-              if (fbVal === undefined || fbVal === null) break
-              fbVal = fbVal[f]
-            }
-            if (fbVal !== undefined && fbVal !== null) {
-              passed = true
-              const matchedField = Array.isArray(params.fallback_field)
-                ? String(candidate)
-                : params.fallback_field
-              evidence = `字段 ${params.field} 不存在，但 ${matchedField} = ${JSON.stringify(fbVal)?.slice(0, 100)}${workspaceHint}`
-              break
-            }
-          }
-        }
-      } catch (e) { passed = false; evidence = `JSON 解析失败: ${e.message}` }
+      const r = checkJsonFieldContent(content, params)
+      passed = r.passed
+      evidence = r.evidence + (workspaceHint || '')
       break
     }
 
