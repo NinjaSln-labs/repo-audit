@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "repo-audit 文档索引",
   "description": "AI Agent 可读的文档索引 — 包含所有文档的元数据、结构、和调用协议",
-  "version": "1.4.0",
-  "updated": "2026-09-08",
+  "version": "1.4.1",
+  "updated": "2026-09-09",
   "repo": "NinjaSln-labs/repo-audit",
   "npm": "repo-audit-tool",
   "pages": "https://ninjasln-labs.github.io/repo-audit/",
-
   "entry_points": {
     "json_index": "/AGENT-INDEX.json",
     "schema": "/SCHEMA.json",
@@ -15,33 +14,72 @@
     "human_guide": "/repo-audit/HUMAN-GUIDE.md",
     "agent_guide": "/repo-audit/AGENT-GUIDE.md"
   },
-
   "tool": {
     "name": "repo-audit",
     "description": "仓库标准化审计工具 + 工程脚手架生成器（零依赖）",
     "bin": "repo-audit",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "language": "JavaScript (ESM)",
     "runtime": "Node.js >= 18",
     "dependencies": [],
     "license": "MIT",
-
     "invocation": {
       "command": "repo-audit [options]",
       "options": {
-        "--repo": { "type": "string", "default": ".", "description": "目标仓库路径" },
-        "--type": { "type": "string", "description": "强制指定分类（跳过自动检测）" },
-        "--format": { "type": "string", "enum": ["md", "json", "both"], "default": "both", "description": "输出格式" },
-        "--output": { "type": "string", "default": "<repo>/audit-report/", "description": "输出目录" },
-        "--llm-provider": { "type": "string", "description": "LLM 协议：openai/anthropic 或厂商别名" },
-        "--llm-model": { "type": "string", "description": "模型名称" },
-        "--strict": { "type": "boolean", "default": false, "description": "严格模式：Critical/Major 即 exit 1" },
-        "--rules": { "type": "string", "description": "自定义规则 YAML（可多次）" },
-        "--dim": { "type": "string", "description": "只审计指定维度（可多次）" },
-        "--feedback": { "type": "string", "description": "提交反馈（创建 GitHub Issue）" },
-        "--help": { "type": "boolean", "description": "显示帮助" }
+        "--repo": {
+          "type": "string",
+          "default": ".",
+          "description": "目标仓库路径"
+        },
+        "--type": {
+          "type": "string",
+          "description": "强制指定分类（跳过自动检测）"
+        },
+        "--format": {
+          "type": "string",
+          "enum": [
+            "md",
+            "json",
+            "both"
+          ],
+          "default": "both",
+          "description": "输出格式"
+        },
+        "--output": {
+          "type": "string",
+          "default": "<repo>/audit-report/",
+          "description": "输出目录"
+        },
+        "--llm-provider": {
+          "type": "string",
+          "description": "LLM 协议：openai/anthropic 或厂商别名"
+        },
+        "--llm-model": {
+          "type": "string",
+          "description": "模型名称"
+        },
+        "--strict": {
+          "type": "boolean",
+          "default": false,
+          "description": "严格模式：Critical/Major 即 exit 1"
+        },
+        "--rules": {
+          "type": "string",
+          "description": "自定义规则 YAML（可多次）"
+        },
+        "--dim": {
+          "type": "string",
+          "description": "只审计指定维度（可多次）"
+        },
+        "--feedback": {
+          "type": "string",
+          "description": "提交反馈（创建 GitHub Issue）"
+        },
+        "--help": {
+          "type": "boolean",
+          "description": "显示帮助"
+        }
       },
-
       "exit_codes": {
         "0": "审计通过（无 Critical/Major 或 --strict 未启用）",
         "1": "有 Critical/Major 发现且 --strict 启用",
@@ -49,7 +87,6 @@
         "3": "目标不是 git 仓库"
       }
     },
-
     "environment_variables": {
       "LLM_PROVIDER": "LLM 协议（openai/anthropic/none），也可用厂商别名如 deepseek/qwen/glm",
       "LLM_API_KEY": "API Key（必须手动指定）",
@@ -58,35 +95,58 @@
       "REPO_AUDIT_TYPES": "自定义分类列表（JSON 数组）"
     }
   },
-
   "audit": {
     "dimensions": [
       {
         "id": "docs",
         "label": "文档",
-        "rules": ["DOC-001", "DOC-002", "DOC-003", "DOC-003b", "DOC-004", "DOC-005", "DOC-006", "DOC-007"],
+        "rules": [
+          "DOC-001",
+          "DOC-002",
+          "DOC-003",
+          "DOC-003b",
+          "DOC-004",
+          "DOC-005",
+          "DOC-006",
+          "DOC-007"
+        ],
         "description": "README/LICENSE/CONTRIBUTING/SECURITY 等文档完整性"
       },
       {
         "id": "git",
         "label": "Git",
-        "rules": ["GIT-001", "GIT-002", "GIT-003", "GIT-004"],
+        "rules": [
+          "GIT-001",
+          "GIT-002",
+          "GIT-003",
+          "GIT-004"
+        ],
         "description": "commit 规范、分支策略、scaffold 管理"
       },
       {
         "id": "quality",
         "label": "质量",
-        "rules": ["QUA-001", "QUA-002", "QUA-003", "QUA-004", "QUA-005"],
+        "rules": [
+          "QUA-001",
+          "QUA-002",
+          "QUA-003",
+          "QUA-004",
+          "QUA-005"
+        ],
         "description": "构建配置、测试、lint、typecheck"
       },
       {
         "id": "security",
         "label": "安全",
-        "rules": ["SEC-001", "SEC-002", "SEC-003", "SEC-004"],
+        "rules": [
+          "SEC-001",
+          "SEC-002",
+          "SEC-003",
+          "SEC-004"
+        ],
         "description": "密钥泄露、依赖漏洞、权限配置"
       }
     ],
-
     "scoring": {
       "formula": "score = 100 - (critical × 25) - (major × 10) - (minor × 3)",
       "grades": {
@@ -98,14 +158,26 @@
       },
       "note": "score 和 grade 不在 JSON 输出中，Agent 需根据 summary 字段自行计算"
     },
-
     "categories": [
-      "dsh-plugin", "python-app", "go-service", "content", "sandbox",
-      "archive", "product-oss", "javascript", "typescript", "java",
-      "python", "rust", "cpp", "dotnet", "php", "ruby", "unknown"
+      "dsh-plugin",
+      "python-app",
+      "go-service",
+      "content",
+      "sandbox",
+      "archive",
+      "product-oss",
+      "javascript",
+      "typescript",
+      "java",
+      "python",
+      "rust",
+      "cpp",
+      "dotnet",
+      "php",
+      "ruby",
+      "unknown"
     ]
   },
-
   "documents": [
     {
       "id": "human-guide",
@@ -189,12 +261,10 @@
       "description": "JSON Schema 定义，用于验证审计报告输出"
     }
   ],
-
   "feedback": {
     "description": "反馈通道 — Agent 可通过 GitHub Issues API 检测和处理用户反馈",
     "label": "audit-feedback",
     "repo": "NinjaSln-labs/repo-audit",
-
     "detect": {
       "command": "gh issue list --repo NinjaSln-labs/repo-audit --label audit-feedback --state open --json number,title,createdAt,body",
       "description": "列出未处理的反馈"
@@ -211,15 +281,29 @@
       "command": "node repo-audit.mjs --feedback '<反馈内容>'",
       "description": "通过 CLI 创建反馈 Issue（自动预填环境信息）"
     },
-
     "priorities": [
-      { "level": "critical", "sla": "24h", "description": "工具崩溃/数据损坏" },
-      { "level": "major", "sla": "72h", "description": "功能严重受损" },
-      { "level": "minor", "sla": "1周", "description": "功能部分受损" },
-      { "level": "info", "sla": "排期", "description": "建议改进" }
+      {
+        "level": "critical",
+        "sla": "24h",
+        "description": "工具崩溃/数据损坏"
+      },
+      {
+        "level": "major",
+        "sla": "72h",
+        "description": "功能严重受损"
+      },
+      {
+        "level": "minor",
+        "sla": "1周",
+        "description": "功能部分受损"
+      },
+      {
+        "level": "info",
+        "sla": "排期",
+        "description": "建议改进"
+      }
     ]
   },
-
   "quick_start": {
     "install": "npm install -g repo-audit-tool",
     "audit": "repo-audit --repo /path/to/repo",
@@ -229,7 +313,6 @@
     "custom_rules": "repo-audit --repo /path/to/repo --rules my-rules.yaml",
     "llm_enhanced": "LLM_API_KEY=sk-xxx repo-audit --repo . --llm-provider deepseek"
   },
-
   "changelog": {
     "1.4.0": "json_field workspace 递归——monorepo 场景下递归检查所有 workspace 包的 license 字段；findWorkspacePackages 发现 npm/pnpm workspaces + 常见目录；checkJsonFieldContent 提取为可复用函数；DOC-003b 启用；15 用例回归",
     "1.3.3": "Issue#5 修复：.auditrc.yaml since 字段 YAML 引号剥离——loadAuditrc 中 since: 分支补 .replace(/['\"]/g, '')，与 reason 分支对称，修复 waived_since 输出含字面引号的 bug；5 用例回归（test/auditrc-since.test.mjs）",
@@ -239,6 +322,7 @@
     "1.2.3": "package.json 补充 repository 字段，修复 npm provenance E422；完成 Trusted Publisher tag 自动发布",
     "1.2.2": "publish CI 改用 node 22 + 条件升级 npm，修复 EBADENGINE（tag 发布因 1.2.1 已存在未出包）",
     "1.2.1": "README 链接改为绝对 URL（修复 npm 页面 404）",
-    "1.2.0": "开源就绪：AGENTS.md、CI/publish workflow、json_field monorepo、fallback_field 数组、英文 README、参数类型校验、占位符扫描"
+    "1.2.0": "开源就绪：AGENTS.md、CI/publish workflow、json_field monorepo、fallback_field 数组、英文 README、参数类型校验、占位符扫描",
+    "1.4.1": "yaml_field 解析健壮性——CRLF 行尾剥离 + 引号键名识别 + 子层缩进以首个子键为准（SEC-004 job 级 id-token 误判 fail，Issue#6）；6 用例回归"
   }
 }
