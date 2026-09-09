@@ -1,4 +1,13 @@
 
+## 2026-09-09 — json_field workspace 递归（v1.4.0）
+
+- HANDOFF §2 占位边界「json_field 检查器仅读根 package.json」已实现——新增 `workspace_recursive` 参数，monorepo 场景递归检查所有 workspace 包
+- `4a0ee3d` findWorkspacePackages（npm workspaces 数组 / pnpm workspaces.packages / 常见目录扫描兜底）+ checkJsonFieldContent 提取复用 + json_field case 增加 workspace_recursive 分支 + DOC-003b 启用 + 15 用例回归（test/workspace-recursive.test.mjs）
+- 实测背书：qingfu-envoy monorepo（6 包，workspaces: ["packages/*"]）DOC-003b evidence 输出全包逐条检查结果，19/19 pass
+- 验证链：自审计 100/A 19/19 + verify 4/4 + test 32/32（17→32，新增 15 用例）
+- ✅ v1.4.0 发布：`2092ef7` tag → Trusted Publisher 自动发布（npm latest + SLSA provenance）
+- ✅ 实机 prefix 安装 bin 实测 qingfu-envoy DOC-003b pass
+
 ## 2026-09-08 — Issue#5 闭环（.auditrc.yaml since 引号剥离）
 
 - 接手即检测到新 Issue#5（反馈检测当场兑现：Issue#4 关闭后 27 小时即有新反馈，证实 HANDOFF §1「快照会过期」教训）
