@@ -74,3 +74,12 @@
 - 修复：pages workflow build 步骤同步根目录文档进 docs/（AUDIT/BEST-PRACTICES/REPO-CLASSIFICATION/templates/README）；index.html ../ 全部改 ./；JSON-LD `①type` 编码事故→`@type`、softwareVersion 1.2.1→1.4.1；badge 数字对齐实测（55 条规则 · 19 种分类，「CI 全绿」静态 badge 移除——不可信的动态声明不如不放）；badge 绿底白字 2.54:1 → #1f6feb 蓝（WCAG AA）；移动端 nav flex-wrap + 640px 断点；补 theme-color/description/OG 标签；scaffold 命令补 clone 前置说明；docs/pages/ 空目录清除
 - 线上验收：四个 404 全转 200，JSON-LD valid（@type + 1.4.1），badge 数字/CI badge 移除已生效
 - 注意：docs/AUDIT.md 等四文件为 workflow 构建产物性质的**仓库内副本**，根目录文档改动后需重跑 pages workflow（paths 已含 docs/** 但根文档不在触发路径，改根文档需手动 workflow_dispatch 或顺带改 docs/）
+
+## 2026-09-09 — Pages Markdown 渲染壳（审计 m-2 收尾）
+
+- 审计遗留项 m-2（.md 裸渲染/下载）修复：新增 `docs/viewer.html`——URL 参数 `?doc=<白名单路径>` 加载站内文档，marked.js（CDN v12.0.2 + SRI 固定）GFM 渲染，GitHub 暗色风格样式，顶栏含返回首页 + 查看原始 Markdown
+- 安全：文档白名单表（DOCS），未知 doc 参数明确报错，防任意 URL 注入；AGENT-INDEX.json / SCHEMA.json 保持直链（JSON 不套渲染）
+- 降级：CDN 加载失败时显示等宽原始文本；fetch 失败显示错误 + 原文链接
+- 首页 12 处 md 链接全部改走 viewer；渲染壳内相对 .md 链接自动改写为 viewer 路径（同名单匹配）
+- 已知边界：viewer 无 hash 路由（文档内锚点为页内跳转，正常）；文档间交叉引用仅同名单文件名匹配
+- 线上验收：viewer.html 200 + SRI 完整 + 首页 12 链接生效
