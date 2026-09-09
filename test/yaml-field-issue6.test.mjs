@@ -1,31 +1,37 @@
 // Issue#6 回归：yaml_field fallback / 解析健壮性
 // 三个根因形态：CRLF 行尾、引号键名、非 2 空格缩进——均导致 SEC-004 误判 fail
+// 进程内直调 runCheckForTest（win32 下 spawnSync node 走 PATHEXT 解析不可靠，P-007 同族坑）
 import { test } from 'node:test'
 import { strictEqual } from 'node:assert'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { execFileSync } from 'node:child_process'
-import { stripYamlComment } from '../repo-audit.mjs'
+import { stripYamlComment, runCheckForTest } from '../repo-audit.mjs'
 
-const TOOL = new URL('..', import.meta.url).pathname
-// win32: spawnSync('node') 走 PATHEXT 需要 shell 解析，直接用 process.execPath（P-007 教训）
-const NODE = process.execPath
+const SEC004_RULE = {
+  id: 'SEC-004',
+  title: 'publish workflow 含 id-token write',
+  severity: 'critical',
+  domain: 'security',
+  applies_to: ['python-app'],
+  check: 'yaml_field',
+  params: {
+    path: '.github/workflows/publish.yml',
+    field: 'permissions.id-token',
+    fallback_field: ['jobs.*.permissions.id-token'],
+    expected: 'write',
+    skip_if_no_file: '.github/workflows/publish.yml',
+  },
+}
 
-// 复现辅助：建最小 python-app 仓 + 指定 publish.yml 内容 → 返回 SEC-004 判定
+// 构造最小临时仓（无需 git——yaml_field 不读 git 元数据）→ 进程内执行 SEC-004
 function auditSec004(yamlContent) {
   const dir = mkdtempSync(join(tmpdir(), 'issue6-'))
   try {
-    execFileSync('git', ['init', '-q'], { cwd: dir })
-    writeFileSync(join(dir, 'pyproject.toml'), '[project]\nname = "demo"\n')
     mkdirSync(join(dir, '.github/workflows'), { recursive: true })
     writeFileSync(join(dir, '.github/workflows/publish.yml'), yamlContent)
-    const out = execFileSync(NODE, [join(TOOL, 'repo-audit.mjs'), '--repo', dir, '--format', 'json'], {
-      cwd: TOOL, encoding: 'utf8',
-    })
-    const report = JSON.parse(out)
-    const f = report.findings.find(x => x.id === 'SEC-004')
-    return f ? f.status + '|' + f.evidence : 'SEC-004 未执行'
+    const { passed, evidence } = runCheckForTest(SEC004_RULE, dir)
+    return (passed ? 'pass' : 'fail') + '|' + evidence
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }

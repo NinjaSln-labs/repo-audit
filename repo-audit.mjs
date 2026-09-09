@@ -921,6 +921,11 @@ function hasEquivalentDocs(repoPath) {
 // 规则检查引擎
 // ============================================================
 
+// Issue#6 回归需要进程内直调（win32 下 spawnSync node 走 PATHEXT 解析不可靠，P-007 同族坑）
+export function runCheckForTest(rule, repoPath, mpj = null) {
+  return runCheck(rule, repoPath, mpj)
+}
+
 function runCheck(rule, repoPath, mpj = null) {
   const { check, params } = rule
   let passed = false
