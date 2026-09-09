@@ -810,5 +810,6 @@ v1.3.2 起完整支持 Windows：
 - **守卫诊断提示**：调用形态未被识别时 stderr 输出 `ℹ 未作为 CLI 入口执行` 一行提示（不再静默 exit 0）
 - **command 检查器跨平台**：自动探测 Git for Windows bash（PATH `sh` → `Git\bin\bash.exe`），未装时相关检查降级提示
 - **CI 双平台矩阵**：master push/PR 在 ubuntu-latest + windows-latest 上同时跑验证链与 npm 安装 smoke
+- **YAML 解析跨平台（v1.4.1）**：CRLF 行尾（Windows 编辑器产物）不再导致 `yaml_field` 标量失配——见 §12.4b 与 [Issue #6](https://github.com/NinjaSln-labs/repo-audit/issues/6)
 
 

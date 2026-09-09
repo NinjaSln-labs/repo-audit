@@ -1,15 +1,19 @@
 # 发布记录：repo-audit-tool
 
-## 发布状态（2026-09-07 更新）
+## 发布状态（2026-09-09 更新）
 
 | 项 | 状态 |
 |---|---|
-| npm | `repo-audit-tool` v1.3.1（latest，CI 自动发布）；v1.3.2 发版中 |
+| npm | `repo-audit-tool` v1.4.1（latest，Trusted Publisher + SLSA provenance `logIndex=2772589051`） |
 | GitHub | `NinjaSln-labs/repo-audit` master；发版 tag `v*` |
-| 本地验证 | 自审计 100/A，验证链 4/4，测试 12/12，CI 双平台（ubuntu + windows） |
+| 本地验证 | 自审计 100/A，验证链 4/4，测试 38/38，CI 双平台（ubuntu + windows） |
 
 ## 版本历史
 
+- **1.4.1** — Issue#6 修复：yaml_field 解析健壮性——CRLF 行尾剥离（normalizeYamlLines）+
+  引号键名识别（matchYamlKey）+ 子层缩进以首个子键实际缩进为准（2/4 空格风格均支持）；
+  SEC-004 job 级 id-token 误判 fail 收敛；6 用例回归；CI windows 矩阵抓两轮 win32 spawn
+  坑后改进程内直调 runCheckForTest（2026-09-09）
 - **1.4.0** — json_field workspace 递归：monorepo 场景下递归检查所有 workspace 包
   的 license 字段；findWorkspacePackages（npm workspaces 数组 / pnpm workspaces.packages /
   常见目录扫描兜底）+ checkJsonFieldContent 提取复用 + DOC-003b 启用；

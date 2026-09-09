@@ -558,4 +558,4 @@ GitHub Issues                    修复 / 文档 / 不采纳
 3. `minor` — 功能部分受损（1 周内响应）
 4. `info` — 建议改进（排期处理）
 
-*Agent 操作手册 v1.3.2 · 2026-09-07（§5.5 Windows 调用形态；v1.3.2 修复 Windows 入口回归 Issue#4）*
+*Agent 操作手册 v1.4.1 · 2026-09-09（§4.7 yaml_field fallback_field 与解析健壮性；§5.5 Windows 调用形态）*
