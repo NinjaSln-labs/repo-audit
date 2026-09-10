@@ -26,12 +26,19 @@
 # 本仓自审计（期望 100/A）
 npm run audit
 
-# 验证链（规则加载 / 引擎运行 / 跨平台 shim / 手册完整）
+# 验证链（规则加载 / 引擎运行 / 跨平台 shim / 手册完整 / 版本一致性）
 npm run verify
 
 # 单元测试
 npm test
 ```
+
+### 版本单源（发版防漂移）
+
+- **单源**：`package.json` `"version"`——docs/index.html JSON-LD softwareVersion、AGENT-INDEX.json、AGENT-PROTOCOL.md 的版本字面量一律从单源同步，**不手写**
+- `npm version` 提升版本时 `version` 生命周期钩子自动同步三目标（`scripts/sync-version.mjs`）
+- `verify.mjs` 第 5 项守卫拦截漂移：FAIL 时跑 `npm run sync-version` 修复
+- 发版时人工维护的仅剩：AGENT-INDEX.json 的 `changelog.<新版本>` 条目与 `updated` 字段
 
 ### 开发规范
 

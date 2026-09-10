@@ -4,7 +4,7 @@
  * 验证核心功能：审计引擎可运行、规则可加载、输出可解析、版本字面量不漂移。
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 
 let pass = 0
 let fail = 0
@@ -70,6 +70,21 @@ check('版本一致性', () => {
       `AGENT-PROTOCOL=${r.agentProtocol ? '✓' : '✗'}`,
     ].join(' ')
     throw new Error(`版本漂移（期望 ${r.version}）：${where}；修复: npm run sync-version`)
+  }
+})
+
+// 6. npm 包防泄露（发版事故拦截）
+//    HANDOFF.md 被 .gitignore 排除但 files 白名单 "*.md" glob 会捞走它——
+//    CI checkout 拉不到（未入 git）所以 Trusted Publisher 发布安全；本地手动
+//    npm publish 会泄露（v1.2.0/v1.2.1 实测中招）。files 数组 "!HANDOFF.md"
+//    否定模式为正解；本守卫验证排除项仍生效，防止后续 files 改动回退防线。
+check('npm 包排除 HANDOFF.md（files 否定模式）', () => {
+  const pkg = JSON.parse(readFileSync('package.json', 'utf-8'))
+  if (!Array.isArray(pkg.files)) throw new Error('package.json 缺 files 数组')
+  for (const pattern of ['!HANDOFF.md', '!.env', '!.env.*']) {
+    if (!pkg.files.includes(pattern)) {
+      throw new Error(`files 数组缺排除模式 ${pattern}（npm 泄露防线，勿删）`)
+    }
   }
 })
 

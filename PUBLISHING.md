@@ -43,12 +43,23 @@
 
 ```sh
 npm version patch --no-git-tag-version
+#   ↑ 此步自动触发 package.json "version" 钩子：scripts/sync-version.mjs 同步
+#     docs/index.html JSON-LD softwareVersion / AGENT-INDEX.json / AGENT-PROTOCOL.md
+#     版本字面量（写侧闸门；AGENTS.md 版本单源规则见下）
 V="$(node -p "require('./package.json').version")"
 git commit -am "chore: release repo-audit-tool v$V — <一句话主旨>"
 git tag v$V
 git push && git push --tags
-# CI 接手：审计 → 验证链 → 测试 → 版本守卫 → npm publish
+# CI 接手：审计 → 验证链（含版本一致性守卫）→ 测试 → 版本守卫 → npm publish
 ```
+
+### 版本单源规则（发版防漂移）
+
+- **单源**：`package.json` `"version"`。任何地方需要版本字面量，从单源同步，不手写
+- **写侧**：`npm version` 钩子自动同步三目标（`npm run sync-version` 可手动补同步）
+- **读侧**：`verify.mjs` 第 5 项「版本一致性」——漂移即 FAIL，本地与 CI 同源拦截
+- 手动同步/检查：`npm run sync-version` / `node scripts/sync-version.mjs --check`
+- AGENT-INDEX.json 的 `changelog.<版本>` 条目与 `updated` 字段仍是**人工维护**（发版时一并补）
 
 ## canary 灰度通道
 

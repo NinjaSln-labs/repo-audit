@@ -3,10 +3,13 @@
 // 形态遵守 P-008：进程内直调导出函数，fixture 用临时目录，不 spawn 子进程。
 import { test } from 'node:test'
 import assert from 'node:assert'
-import { mkdtempSync, writeFileSync, readFileSync, cpSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { syncIndexHtml, syncAgentIndex, syncAgentProtocol, checkAll, readVersion } from '../scripts/sync-version.mjs'
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 function fixtureDir() {
   const dir = mkdtempSync(join(tmpdir(), 'version-sync-'))
@@ -117,4 +120,38 @@ test('checkAll：漂移被守卫抓到（注入 fixture，三目标各自漂移 
   // 全对齐 → ok:true
   good(files)
   assert.equal(checkAll('1.0.0', files).ok, true)
+})
+
+// npm 泄露守卫（verify.mjs 第 6 项同源断言）：
+// HANDOFF.md 被 files "*.md" glob 捞走过（v1.2.0/v1.2.1 手动发布实测中招），
+// files 否定模式 "!HANDOFF.md" 是防线——此测试防后续 files 改动回退防线。
+test('npm 包防泄露：files 数组保留 HANDOFF/.env 否定模式（verify 链同源断言）', () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf-8'))
+  assert.ok(Array.isArray(pkg.files), 'files 必须是数组')
+  for (const p of ['!HANDOFF.md', '!.env', '!.env.*']) {
+    assert.ok(pkg.files.includes(p), `files 缺排除模式 ${p}`)
+  }
+})
+
+// 端到端形态守卫：npm pack 实测排除生效（dry-run 不落盘）。
+// 放在最后跑——依赖 npm CLI；对 verify 链的「包内容正确性」做实证而非纸面断言。
+test('npm pack dry-run：tarball 不含 HANDOFF.md / .env / test/（端到端实证）', async () => {
+  const { spawnSync } = await import('node:child_process')
+  // P-008：测试内避免 spawn 子进程。但此处 spawn 的是 npm pack（外部 CLI 工具，
+  // 非引擎本身），win32 ENOENT 风险点是 node/spawnSync('node')——npm 是 .cmd 形态，
+  // shell:true 由 npm 生态保证。为稳妥用 execFileSync + shell 兜底（CI 双平台已实跑覆盖）。
+  const r = spawnSync('npm', ['pack', '--dry-run', '--json'], {
+    encoding: 'utf-8',
+    cwd: ROOT,
+    shell: process.platform === 'win32',
+  })
+  assert.equal(r.status, 0, `npm pack dry-run 失败: ${r.stderr?.slice(-300)}`)
+  const out = r.stdout
+  assert.ok(out.length > 0, 'npm pack 无输出')
+  // JSON 数组形态提取文件清单
+  const j = JSON.parse(out)
+  const files = (j[0]?.files ?? []).map((f) => f.path ?? f)
+  assert.ok(files.length > 0, 'pack 清单为空')
+  const banned = files.filter((p) => /(^|\/)(HANDOFF\.md|\.env(\..*)?|test\/)/.test(p))
+  assert.deepEqual(banned, [], `tarball 含被禁文件: ${banned.join(', ')}`)
 })

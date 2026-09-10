@@ -36,6 +36,11 @@
     "templates/",
     "docs/",
     "*.md",
+    "!HANDOFF.md",
+    "!.env",
+    "!.env.*",
+    "!audit-report/",
+    "!test/",
     "LICENSE"
   ],
   "license": "MIT"
