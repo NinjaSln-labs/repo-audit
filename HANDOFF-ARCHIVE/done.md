@@ -1,4 +1,13 @@
 
+## 2026-09-10 — 版本单源同步 + npm 包泄露防线（未发版）
+
+- HANDOFF §3.14 可选方向「JSON-LD softwareVersion 随发版同步」实现：`2a4a750` scripts/sync-version.mjs（单源 package.json version，同步 index.html JSON-LD / AGENT-INDEX.json version+tool.version / AGENT-PROTOCOL.md frontmatter+§1 JSON 块；CLI --check 守卫形态 + 幂等）+ package.json "version" 生命周期钩子（npm version 提升自动同步，--no-git-tag-version 下实测生效）+ verify.mjs 第 5 项「版本一致性」守卫 + 9 用例回归（fixture 直调，P-008 合规）
+- 连带雷 1（阻塞）：`.githooks/pre-commit` 是 dsh-plugin 模板残留（引用不存在的 scripts/check-deploy.mjs），本仓从未提交过 src//scripts/ 路径所以未引爆——本次建 scripts/ 即触发。替换为本仓验证链守卫（与 CI 同源）；DEVELOPMENT.md 整文件同为 dsh-demo 残留，登记待办未强动
+- 连带雷 2（安全）：`files: ["*.md"]` glob 优先于 .gitignore——本地手动 npm publish 会把 HANDOFF.md（含内部路径）打进 tarball。实测 v1.2.0/v1.2.1 两个手动发布版本已泄露（下载 tarball 确认，无凭证/PII，仅内部路径）；v1.2.2 起 Trusted Publisher 在 CI checkout（无此文件）发布，未再泄露。`a063da7` files 补否定模式（!HANDOFF.md / !.env / !.env.* / !audit-report/ / !test/）+ verify.mjs 第 6 项守卫 + 端到端 npm pack dry-run 实证用例（11 用例）
+- 存量漂移修复：docs/AGENT-PROTOCOL.md 版本 1.2.1 → 1.4.1（守卫首跑即抓到）
+- 验证链：自审计 100/A 19/19 + verify 6/6 + test 49/49（38→49）+ CI 双平台绿 + pages 部署绿（线上 AGENT-PROTOCOL 1.4.1 实测验收）
+- 发版说明：本次改动属仓库基建，未发 npm 版本；下个版本发布时 changelog 条目待补
+
 ## 2026-09-09 — json_field workspace 递归（v1.4.0）
 
 - HANDOFF §2 占位边界「json_field 检查器仅读根 package.json」已实现——新增 `workspace_recursive` 参数，monorepo 场景递归检查所有 workspace 包
