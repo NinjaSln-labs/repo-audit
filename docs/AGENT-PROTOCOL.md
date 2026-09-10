@@ -1,6 +1,6 @@
 ---
 title: repo-audit Agent Protocol
-version: "1.2.1"
+version: "1.4.1"
 audience: agent
 format: markdown+metadata
 schema: /SCHEMA.json
@@ -17,7 +17,7 @@ index: /AGENT-INDEX.json
 {
   "name": "repo-audit",
   "npm": "repo-audit-tool",
-  "version": "1.2.1",
+  "version": "1.4.1",
   "bin": "repo-audit",
   "language": "JavaScript ESM",
   "runtime": "Node.js >= 18",

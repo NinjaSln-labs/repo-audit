@@ -1,12 +1,10 @@
 #!/usr/bin/env node
 /**
  * repo-audit 自检验证链
- * 验证核心功能：审计引擎可运行、规则可加载、输出可解析。
+ * 验证核心功能：审计引擎可运行、规则可加载、输出可解析、版本字面量不漂移。
  */
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, writeFileSync, mkdirSync } from 'node:fs'
-import { join } from 'node:path'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 
 let pass = 0
 let fail = 0
@@ -54,6 +52,24 @@ check('跨平台 shim', () => {
 check('手册完整', () => {
   for (const m of ['docs/repo-audit/AGENT-GUIDE.md', 'docs/repo-audit/HUMAN-GUIDE.md']) {
     if (!existsSync(m)) throw new Error(`缺 ${m}`)
+  }
+})
+
+// 5. 版本一致性（发版防漂移守卫）
+//    单源 package.json version；目标字面量与同步逻辑在 scripts/sync-version.mjs。
+//    写侧：npm version 钩子（package.json "version" script）自动同步；
+//    读侧：本检查，本地与 CI 同源拦截漂移。
+//    动态 import 置于 check 之外——check() 是同步 try/catch，吞不下 async rejection。
+const { checkAll } = await import('./scripts/sync-version.mjs')
+check('版本一致性', () => {
+  const r = checkAll()
+  if (!r.ok) {
+    const where = [
+      `index.html=${r.indexHtml ? '✓' : '✗'}`,
+      `AGENT-INDEX=${r.agentIndex ? '✓' : '✗'}`,
+      `AGENT-PROTOCOL=${r.agentProtocol ? '✓' : '✗'}`,
+    ].join(' ')
+    throw new Error(`版本漂移（期望 ${r.version}）：${where}；修复: npm run sync-version`)
   }
 })
 

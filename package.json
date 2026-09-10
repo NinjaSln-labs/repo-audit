@@ -11,7 +11,9 @@
     "test": "node --test",
     "verify": "node verify.mjs",
     "audit": "node repo-audit.mjs --repo .",
-    "scaffold": "node templates/scaffold.mjs"
+    "scaffold": "node templates/scaffold.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "version": "node scripts/sync-version.mjs"
   },
   "keywords": [
     "audit",
